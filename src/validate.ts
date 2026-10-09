@@ -1,6 +1,7 @@
 import { getCel, getTagRanges } from "./document.js";
 import type { Project } from "./project.js";
 import { isWrapEnabled } from "./raster.js";
+import { rigWarnings } from "./character.js";
 import { findOrphans } from "./shading.js";
 import { paletteRgb } from "./palette.js";
 import { checkTransitionSet, templateFrameCount, tileImages } from "./tileset/check.js";
@@ -103,6 +104,9 @@ export function validateDocument(project: Project, doc: Document): ValidationRep
   }
 
   validateTileset(project, doc, report);
+  if (doc.rig) {
+    for (const message of rigWarnings(doc).slice(0, MAX_LISTED)) report.warnings.push({ check: "rig-overlap", message });
+  }
   return report;
 }
 

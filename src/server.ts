@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Project } from "./project.js";
 import type { ProjectSettings } from "./types.js";
 import { makeRegister } from "./tools/helpers.js";
+import { registerCharacterTools } from "./tools/character.js";
 import { registerDrawingTools } from "./tools/drawing.js";
 import { registerExportTools } from "./tools/export.js";
 import { registerLayerFrameTools } from "./tools/layers.js";
@@ -48,6 +49,7 @@ export function createServer(root: string, settings: Partial<ProjectSettings> = 
   registerShadingTools(register, project);
   registerPreviewTools(register, project);
   registerTilesetTools(register, project);
+  registerCharacterTools(register, project);
   registerExportTools(register, project);
   return { server, project, tools };
 }
