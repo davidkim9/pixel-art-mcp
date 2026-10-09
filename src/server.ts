@@ -10,6 +10,7 @@ import { registerPreviewTools } from "./tools/preview.js";
 import { registerProjectTools } from "./tools/project.js";
 import { registerSelectionTools } from "./tools/selection.js";
 import { registerShadingTools } from "./tools/shading.js";
+import { registerTilesetTools } from "./tools/tileset.js";
 
 export const SERVER_NAME = "pixel-art-mcp";
 export const SERVER_VERSION = "0.1.0";
@@ -46,6 +47,7 @@ export function createServer(root: string, settings: Partial<ProjectSettings> = 
   registerSelectionTools(register, project);
   registerShadingTools(register, project);
   registerPreviewTools(register, project);
+  registerTilesetTools(register, project);
   registerExportTools(register, project);
   return { server, project, tools };
 }

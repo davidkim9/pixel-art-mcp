@@ -172,25 +172,29 @@ export function offsetCel(cel: Uint8Array, w: number, h: number, dx: number, dy:
 }
 
 /** Square-image dihedral transforms used by tileset generation. */
-export type Dihedral = "identity" | "flipH" | "flipV" | "rot90" | "rot180" | "rot270" | "transpose" | "antitranspose";
+export const DIHEDRAL = ["identity", "flipH", "flipV", "rot180", "rot90", "rot270", "transpose", "antitranspose"] as const;
+export type Dihedral = (typeof DIHEDRAL)[number];
+
+/** Where (x, y) lands under a transform of an (n+1)×(n+1) square. rot90 is clockwise. */
+export function transformPoint(x: number, y: number, n: number, t: Dihedral): [number, number] {
+  switch (t) {
+    case "identity": return [x, y];
+    case "flipH": return [n - x, y];
+    case "flipV": return [x, n - y];
+    case "rot90": return [n - y, x];
+    case "rot180": return [n - x, n - y];
+    case "rot270": return [y, n - x];
+    case "transpose": return [y, x];
+    default: return [n - y, n - x];
+  }
+}
 
 export function transformSquare(src: Uint8Array, size: number, t: Dihedral): Uint8Array {
   const out = new Uint8Array(size * size);
   const n = size - 1;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      let nx: number;
-      let ny: number;
-      switch (t) {
-        case "identity": [nx, ny] = [x, y]; break;
-        case "flipH": [nx, ny] = [n - x, y]; break;
-        case "flipV": [nx, ny] = [x, n - y]; break;
-        case "rot90": [nx, ny] = [n - y, x]; break;
-        case "rot180": [nx, ny] = [n - x, n - y]; break;
-        case "rot270": [nx, ny] = [y, n - x]; break;
-        case "transpose": [nx, ny] = [y, x]; break;
-        default: [nx, ny] = [n - y, n - x]; break;
-      }
+      const [nx, ny] = transformPoint(x, y, n, t);
       out[ny * size + nx] = src[y * size + x]!;
     }
   }

@@ -2,6 +2,9 @@ import { getCel, getTagRanges } from "./document.js";
 import type { Project } from "./project.js";
 import { isWrapEnabled } from "./raster.js";
 import { findOrphans } from "./shading.js";
+import { paletteRgb } from "./palette.js";
+import { checkTransitionSet, templateFrameCount, tileImages } from "./tileset/check.js";
+import { analyzeSeams } from "./tileset/seams.js";
 import type { Document } from "./types.js";
 
 export interface Issue {
@@ -99,7 +102,52 @@ export function validateDocument(project: Project, doc: Document): ValidationRep
     }
   }
 
+  validateTileset(project, doc, report);
   return report;
+}
+
+function validateTileset(project: Project, doc: Document, report: ValidationReport): void {
+  if (!doc.tileset) return;
+  const template = doc.tileset.template;
+  if (!template) {
+    // Plain seamless tiles: every non-empty frame should repeat without visible seams.
+    const palette = paletteRgb(project.paletteFor(doc));
+    const seams: Array<{ frame: number; verdict: string; flagged: number }> = [];
+    tileImages(doc).forEach((pixels, frame) => {
+      if (!pixels.some((v) => v)) return;
+      const r = analyzeSeams(pixels, doc.width, doc.height, palette);
+      if (r.verdict !== "seamless") seams.push({ frame, verdict: r.verdict, flagged: r.horizontal.flagged.length + r.vertical.flagged.length });
+    });
+    if (seams.length) {
+      report.warnings.push({ check: "tile-seams", message: `Tile seams may be visible in frame(s) ${seams.map((s) => s.frame).join(", ")} (see check_seams).`, details: seams });
+    }
+    return;
+  }
+  if (doc.frames.length !== templateFrameCount(template)) {
+    report.errors.push({ check: "transition-set", message: `A ${template} set needs exactly ${templateFrameCount(template)} frames; this one has ${doc.frames.length}.` });
+    return;
+  }
+  const result = checkTransitionSet(project, doc);
+  if (result.missing.length) {
+    const level = template === "corner15" ? report.errors : report.warnings;
+    level.push({ check: "transition-set", message: `Missing tiles (masks): ${result.missing.join(", ")}.` });
+  }
+  if (result.mismatches.length) {
+    report.errors.push({
+      check: "transition-set",
+      message: `${result.mismatches.length} edge(s) break the corner edge-matching rule (see check_transition_set).`,
+      details: result.mismatches.slice(0, MAX_LISTED),
+    });
+  }
+  if (result.seamWarnings.length) {
+    report.warnings.push({
+      check: "tile-seams",
+      message: `Possible visible seams where tiles repeat: ${result.seamWarnings.map((w) => `tile ${w.tile} (${w.axis})`).join(", ")}.`,
+    });
+  }
+  if (result.baseNotEmpty) {
+    report.warnings.push({ check: "transition-set", message: "Overlay mode: frame 0 (all lower terrain) should be empty; it is exported to atlas slot 0." });
+  }
 }
 
 export function formatIssues(report: ValidationReport): string {

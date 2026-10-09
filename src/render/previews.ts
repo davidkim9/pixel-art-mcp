@@ -96,15 +96,33 @@ export interface SheetCell {
   highlights?: Highlight[];
 }
 
+/** Splits text into at most `maxLines` lines that fit `width` pixels (last line truncated). */
+export function wrapText(text: string, width: number, scale: number, maxLines: number): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (textWidth(candidate, scale) <= width || !current) current = candidate;
+    else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  const out = lines.slice(0, maxLines);
+  if (lines.length > maxLines) out[maxLines - 1] = lines.slice(maxLines - 1).join(" ");
+  return out.map((l) => fitText(l, width, scale));
+}
+
 /** Lays out labelled cells in a grid (contact sheet). */
 export function renderSheet(cells: SheetCell[], scale: number, opts: { grid?: boolean; background?: Background; columns?: number } = {}): RgbaImage {
   const gap = 8;
   const ls = 2;
   const lineH = textHeight(ls) + 3;
-  const labelH = lineH * 2 + 2;
+  const labelH = lineH * 3 + 2;
   const cw = Math.max(...cells.map((c) => c.buf.width)) * scale;
   const ch = Math.max(...cells.map((c) => c.buf.height)) * scale;
-  const cellW = Math.max(cw, 40);
+  const cellW = Math.max(cw, 96);
   const fitCols = Math.max(1, Math.floor((MAX_PREVIEW_DIM - gap) / (cellW + gap)));
   const cols = Math.min(cells.length, opts.columns ?? fitCols);
   const rows = Math.ceil(cells.length / cols);
@@ -113,7 +131,9 @@ export function renderSheet(cells: SheetCell[], scale: number, opts: { grid?: bo
     const x = gap + (i % cols) * (cellW + gap);
     const y = gap + Math.floor(i / cols) * (labelH + ch + gap);
     img.text(x, y, fitText(cell.title, cellW, ls), INK, ls);
-    if (cell.subtitle) img.text(x, y + lineH, fitText(cell.subtitle, cellW, ls), [90, 90, 90], ls);
+    if (cell.subtitle) {
+      wrapText(cell.subtitle, cellW, ls, 2).forEach((line, k) => img.text(x, y + lineH * (k + 1), line, [90, 90, 90], ls));
+    }
     const view = renderCanvasView(cell.buf, {
       scale,
       grid: opts.grid ?? false,
