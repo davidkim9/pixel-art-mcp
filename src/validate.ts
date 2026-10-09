@@ -1,0 +1,107 @@
+import { getCel, getTagRanges } from "./document.js";
+import type { Project } from "./project.js";
+import { isWrapEnabled } from "./raster.js";
+import { findOrphans } from "./shading.js";
+import type { Document } from "./types.js";
+
+export interface Issue {
+  check: string;
+  message: string;
+  details?: unknown;
+}
+
+export interface ValidationReport {
+  errors: Issue[];
+  warnings: Issue[];
+}
+
+const MAX_LISTED = 20;
+
+export function validateDocument(project: Project, doc: Document): ValidationReport {
+  const report: ValidationReport = { errors: [], warnings: [] };
+  const palette = project.palettes.get(doc.paletteId);
+  if (!palette) {
+    report.errors.push({ check: "palette", message: `Palette "${doc.paletteId}" is not loaded.` });
+    return report;
+  }
+
+  // Index outside palette range (error)
+  const outside: Array<{ layer: string; frame: number; x: number; y: number; index: number }> = [];
+  let outsideCount = 0;
+  for (const layer of doc.layers) {
+    for (let f = 0; f < doc.frames.length; f++) {
+      const cel = getCel(doc, layer.id, f);
+      if (!cel) continue;
+      for (let p = 0; p < cel.length; p++) {
+        if (cel[p]! >= palette.colors.length) {
+          outsideCount++;
+          if (outside.length < MAX_LISTED) outside.push({ layer: layer.id, frame: f, x: p % doc.width, y: Math.floor(p / doc.width), index: cel[p]! });
+        }
+      }
+    }
+  }
+  if (outsideCount > 0) {
+    report.errors.push({
+      check: "palette-range",
+      message: `${outsideCount} pixel(s) use indices outside palette "${palette.id}" (0–${palette.colors.length - 1}).`,
+      details: outside,
+    });
+  }
+
+  // Partial alpha (error): palette colors must be opaque; index 0 is the only transparency.
+  const badColors = palette.colors.slice(1).filter((c) => !/^#[0-9a-f]{6}$/i.test(c));
+  if (badColors.length) {
+    report.errors.push({ check: "partial-alpha", message: `Palette has non-opaque or malformed colors: ${badColors.join(", ")}` });
+  }
+
+  // Canvas size (warning)
+  if (doc.width % 8 !== 0 || doc.height % 8 !== 0) {
+    report.warnings.push({ check: "canvas-size", message: `Canvas ${doc.width}x${doc.height} is not a multiple of 8.` });
+  }
+
+  // Orphan pixels (warning)
+  const wrap = isWrapEnabled(doc);
+  const orphanSummary: Array<{ layer: string; frame: number; pixels: Array<{ x: number; y: number }> }> = [];
+  let orphanCount = 0;
+  for (const layer of doc.layers) {
+    if (layer.guide) continue;
+    for (let f = 0; f < doc.frames.length; f++) {
+      const cel = getCel(doc, layer.id, f);
+      if (!cel) continue;
+      const orphans = findOrphans(cel, doc.width, doc.height, wrap);
+      if (orphans.length) {
+        orphanCount += orphans.length;
+        if (orphanSummary.length < MAX_LISTED) orphanSummary.push({ layer: layer.id, frame: f, pixels: orphans.slice(0, 8).map(({ x, y }) => ({ x, y })) });
+      }
+    }
+  }
+  if (orphanCount > 0) {
+    report.warnings.push({ check: "orphan-pixels", message: `${orphanCount} isolated single pixel(s) (no opaque neighbors).`, details: orphanSummary });
+  }
+
+  // Frame durations and tag gaps (warning)
+  const badDurations = doc.frames.map((f, i) => (!(f.durationMs > 0) ? i : -1)).filter((i) => i >= 0);
+  if (badDurations.length) {
+    report.warnings.push({ check: "frame-duration", message: `Frames without a positive duration: ${badDurations.join(", ")}.` });
+  }
+  const ranges = getTagRanges(doc);
+  const seen = new Map<string, number>();
+  for (const r of ranges) seen.set(r.name, (seen.get(r.name) ?? 0) + 1);
+  for (const [name, count] of seen) {
+    if (count > 1) report.warnings.push({ check: "tag-gaps", message: `Tag "${name}" is split into ${count} non-contiguous ranges.` });
+  }
+  if (ranges.length > 0 && doc.kind !== "character") {
+    const first = Math.min(...ranges.map((r) => r.from));
+    const last = Math.max(...ranges.map((r) => r.to));
+    const untagged = doc.frames.map((f, i) => (!f.tag && i > first && i < last ? i : -1)).filter((i) => i >= 0);
+    if (untagged.length) {
+      report.warnings.push({ check: "tag-gaps", message: `Untagged frames between tagged ranges: ${untagged.join(", ")}.` });
+    }
+  }
+
+  return report;
+}
+
+export function formatIssues(report: ValidationReport): string {
+  return report.errors.map((e) => `[${e.check}] ${e.message}`).join("\n");
+}

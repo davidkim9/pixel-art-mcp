@@ -1,0 +1,44 @@
+{
+  "name": "pixel-art-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for creating indexed-color pixel art (sprites, characters, tilesets, effects, icons) for TypeScript + Three.js billboard games",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "pixel-art-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "pixel-art",
+    "sprites",
+    "tileset",
+    "three.js",
+    "aseprite"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/pngjs": "^6.0.5",
+    "ase-parser": "^0.0.19",
+    "pngjs": "^7.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}
