@@ -6,7 +6,7 @@ import type { Document, DocKind, ProjectSettings } from "../types.js";
 import { DOC_KINDS } from "../types.js";
 import { isWrapEnabled } from "../raster.js";
 import { setupDocumentKind } from "../kinds.js";
-import { zDocId } from "./helpers.js";
+import { docPreview, framePreview, zDocId, zPreview } from "./helpers.js";
 import type { Register } from "./helpers.js";
 
 export function sizeWarnings(width: number, height: number): string[] {
@@ -158,6 +158,7 @@ export function registerProjectTools(register: Register, project: Project): void
     title: "Delete document",
     description: "Close a document (removes it from memory and from the next save_project).",
     input: { docId: zDocId },
+    destructive: true,
     handler: (args) => {
       project.removeDoc(args.docId);
       return { data: { deleted: args.docId } };
@@ -173,13 +174,15 @@ export function registerProjectTools(register: Register, project: Project): void
       width: z.number().int().min(1).max(4096),
       height: z.number().int().min(1).max(4096),
       anchor: z.enum(ANCHORS).optional().describe("default \"center\""),
+      preview: zPreview,
     },
     mutates: (a) => a.docId,
     handler: (args) => {
       const doc = project.getDoc(args.docId);
       const offset = resizeCanvas(doc, args.width, args.height, args.anchor ?? "center");
       project.selections.delete(doc.id);
-      return { data: { width: doc.width, height: doc.height, contentOffset: offset, warnings: sizeWarnings(doc.width, doc.height) } };
+      const data = { width: doc.width, height: doc.height, contentOffset: offset, warnings: sizeWarnings(doc.width, doc.height) };
+      return args.preview ? { data, images: [framePreview(project, doc, 0)] } : { data };
     },
   });
 
@@ -187,10 +190,11 @@ export function registerProjectTools(register: Register, project: Project): void
     name: "undo",
     title: "Undo",
     description: "Undo the last change to a document (up to 30 steps per document).",
-    input: { docId: zDocId },
+    input: { docId: zDocId, preview: zPreview },
     handler: (args) => {
       const remaining = project.undo(args.docId);
-      return { data: { undone: true, remainingUndoSteps: remaining } };
+      const data = { undone: true, remainingUndoSteps: remaining };
+      return args.preview ? { data, images: [docPreview(project, project.getDoc(args.docId))] } : { data };
     },
   });
 
@@ -210,6 +214,7 @@ export function registerProjectTools(register: Register, project: Project): void
     title: "Load project",
     description: "Load a saved project from outputDir/.pixelmcp/ (or from `dir`), replacing the documents and palettes in memory.",
     input: { dir: z.string().optional().describe("Output directory (or its .pixelmcp folder) to load from; default: current outputDir") },
+    destructive: true,
     handler: (args) => {
       const file = project.load(args.dir);
       return {

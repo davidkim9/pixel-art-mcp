@@ -1,5 +1,6 @@
 import path from "node:path";
-import { compositeIndexed, exportLayers, framePivot, getTagRanges, hasContent } from "../document.js";
+import { drawOrderFor } from "../character.js";
+import { compositeIndexed, exportLayers, framePivot, getCel, getTagRanges, hasContent } from "../document.js";
 import { paletteRgb } from "../palette.js";
 import { encodeIndexedPng } from "../png.js";
 import type { Project } from "../project.js";
@@ -53,13 +54,27 @@ export function hasGlowLayers(doc: Document): boolean {
   return doc.layers.some(exportLayers("additive"));
 }
 
+/** Flattens one frame; character frames follow their direction's draw order instead of the layer stack. */
+export function flattenFrame(doc: Document, frame: number, blend: "normal" | "additive"): Uint8Array {
+  const direction = doc.rig?.directions[frame];
+  if (!direction) return compositeIndexed(doc, frame, exportLayers(blend));
+  const out = new Uint8Array(doc.width * doc.height);
+  for (const id of drawOrderFor(doc, direction)) {
+    const layer = doc.layers.find((l) => l.id === id)!;
+    if (layer.blend !== blend) continue;
+    const cel = getCel(doc, id, frame);
+    if (cel) for (let i = 0; i < out.length; i++) if (cel[i]) out[i] = cel[i]!;
+  }
+  return out;
+}
+
 /** Flattened frame images (normal layers, plus additive layers as glow). */
 export function collectFrames(doc: Document, frames: number[], baseName: string): ExportFrame[] {
   const glow = hasGlowLayers(doc);
   return frames.map((f, k) => ({
     name: `${baseName}_${k}`,
-    pixels: compositeIndexed(doc, f, exportLayers("normal")),
-    glow: glow ? compositeIndexed(doc, f, exportLayers("additive")) : undefined,
+    pixels: flattenFrame(doc, f, "normal"),
+    glow: glow ? flattenFrame(doc, f, "additive") : undefined,
     w: doc.width,
     h: doc.height,
     durationMs: doc.frames[f]!.durationMs,

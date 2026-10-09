@@ -85,6 +85,7 @@ export function registerImportTools(register: Register, project: Project): void 
       "regenerated; .aseprite sources get <name>.png + metadata next to them (writing .aseprite is out of scope). Refuses if the source changed since " +
       "import, unless force: true.",
     input: { docId: zDocId, force: z.boolean().optional() },
+    destructive: true,
     handler: (args) => ({ data: exportToSource(project, project.getDoc(args.docId), args.force ?? false) }),
   });
 }

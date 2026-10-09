@@ -93,6 +93,13 @@ export function posePartsFor(doc: Document, pose: Pose | undefined, direction: s
   return out;
 }
 
+/** Visible, non-guide layer ids of a direction in draw order (back → front); undeclared layers go to the back. */
+export function drawOrderFor(doc: Document, direction: string): string[] {
+  const drawable = doc.layers.filter((l) => l.visible && !l.guide).map((l) => l.id);
+  const declared = (doc.rig?.drawOrder[direction] ?? []).filter((id) => drawable.includes(id));
+  return [...drawable.filter((id) => !declared.includes(id)), ...declared];
+}
+
 /** Effective offsets: a part moves with its parent chain. */
 export function effectiveOffsets(doc: Document, parts: Record<string, PosePart>): Map<string, Point> {
   const result = new Map<string, Point>();
@@ -151,10 +158,8 @@ export function assemble(doc: Document, direction: string, pose?: Pose): Assembl
   const frame = directionFrame(doc, direction);
   const parts = posePartsFor(doc, pose, direction);
   const offsets = effectiveOffsets(doc, parts);
-  const drawable = doc.layers.filter((l) => l.visible && !l.guide).map((l) => l.id);
-  const declared = (rig.drawOrder[direction] ?? []).filter((id) => drawable.includes(id));
-  const missing = drawable.filter((id) => !declared.includes(id));
-  const order = [...missing, ...declared];
+  const order = drawOrderFor(doc, direction);
+  const missing = order.filter((id) => !(rig.drawOrder[direction] ?? []).includes(id));
   const warnings: string[] = [];
   if (missing.length && rig.drawOrder[direction]) warnings.push(`Not in the "${direction}" draw order (drawn at the back): ${missing.join(", ")}.`);
   const pixels = new Uint8Array(doc.width * doc.height);

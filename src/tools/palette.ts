@@ -7,7 +7,7 @@ import { renderPaletteImage } from "../render/previews.js";
 import { cloneDocument } from "../document.js";
 import { fail } from "../util/errors.js";
 import { slugify } from "../util/ids.js";
-import { zDocId } from "./helpers.js";
+import { docPreview, zDocId, zPreview } from "./helpers.js";
 import type { Register } from "./helpers.js";
 
 export function registerPaletteTools(register: Register, project: Project): void {
@@ -124,6 +124,7 @@ export function registerPaletteTools(register: Register, project: Project): void
       docId: zDocId,
       mapping: z.record(z.string(), z.number().int().min(0).max(255)),
       newDocName: z.string().optional(),
+      preview: zPreview,
     },
     mutates: (a) => (a.newDocName ? undefined : a.docId),
     handler: (args) => {
@@ -158,7 +159,8 @@ export function registerPaletteTools(register: Register, project: Project): void
         }
       }
       if (args.newDocName) project.addDoc(doc);
-      return { data: { docId: doc.id, name: doc.name, pixelsRemapped: counts } };
+      const data = { docId: doc.id, name: doc.name, pixelsRemapped: counts };
+      return args.preview ? { data, images: [docPreview(project, doc)] } : { data };
     },
   });
 }

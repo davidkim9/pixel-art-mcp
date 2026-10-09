@@ -5,7 +5,7 @@ import { checkFrame, ensureCel, findLayer, resolveLayerId } from "../document.js
 import { paletteRgb } from "../palette.js";
 import type { Project } from "../project.js";
 import { composeFrame } from "../render/compose.js";
-import { autoScale, renderCanvasView } from "../render/previews.js";
+import { autoScale, renderCanvasView, renderSheet } from "../render/previews.js";
 import type { Document, Rect } from "../types.js";
 import { ToolError, fail } from "../util/errors.js";
 
@@ -20,6 +20,8 @@ export interface ToolDef<S extends z.ZodRawShape> {
   description: string;
   input: S;
   readOnly?: boolean;
+  /** Deletes or overwrites data outside the undo history (MCP destructiveHint). */
+  destructive?: boolean;
   /** Returns the id of the document this call modifies (snapshotted for undo, restored on failure). */
   mutates?: (args: z.infer<z.ZodObject<S>>) => string | undefined;
   handler: (args: z.infer<z.ZodObject<S>>) => ToolOutput | Promise<ToolOutput>;
@@ -66,7 +68,7 @@ export function makeRegister(server: McpServer, project: Project, names?: string
         title: def.title,
         description: def.description,
         inputSchema: def.input,
-        annotations: def.readOnly ? { readOnlyHint: true } : { readOnlyHint: false, destructiveHint: false },
+        annotations: def.readOnly ? { readOnlyHint: true } : { readOnlyHint: false, destructiveHint: def.destructive === true },
       },
       callback as never,
     );
@@ -144,6 +146,14 @@ export function framePreview(project: Project, doc: Document, frame: number, opt
   const scale = opts.scale ?? autoScale(doc.width, doc.height);
   const grid = opts.grid ?? true;
   return renderCanvasView(buf, { scale, grid, rulers: grid, majorEvery: Math.max(doc.width, doc.height) > 16 ? 8 : 0 }).toPng();
+}
+
+/** One frame (single-frame documents) or a contact sheet of every frame. */
+export function docPreview(project: Project, doc: Document): Buffer {
+  if (doc.frames.length === 1) return framePreview(project, doc, 0);
+  const palette = paletteRgb(project.paletteFor(doc));
+  const cells = doc.frames.map((f, i) => ({ buf: composeFrame(doc, palette, i), title: `#${i}`, subtitle: f.label ?? f.tag }));
+  return renderSheet(cells, autoScale(doc.width, doc.height, 128)).toPng();
 }
 
 export function withPreview(project: Project, doc: Document, frame: number, preview: boolean | undefined, data: unknown): ToolOutput {

@@ -10,7 +10,7 @@ import { autoScale, clampScale, renderCanvasView, renderSheet } from "../render/
 import type { Highlight, SheetCell } from "../render/previews.js";
 import type { Pose } from "../types.js";
 import { fail } from "../util/errors.js";
-import { zDocId, zPoint } from "./helpers.js";
+import { framePreview, zDocId, zPoint, zPreview } from "./helpers.js";
 import type { Register } from "./helpers.js";
 
 export function registerCharacterTools(register: Register, project: Project): void {
@@ -122,12 +122,13 @@ export function registerCharacterTools(register: Register, project: Project): vo
     description:
       "Generate one direction from another (e.g. left from right): flips every part horizontally, swaps _l/_r layers (hand_l ↔ hand_r), mirrors pivots " +
       "and attach points, and swaps the draw order's left/right parts. Adds the direction (and its frame) if it doesn't exist.",
-    input: { docId: zDocId, fromDirection: z.string(), toDirection: z.string() },
+    input: { docId: zDocId, fromDirection: z.string(), toDirection: z.string(), preview: zPreview },
     mutates: (a) => a.docId,
     handler: (args) => {
       const doc = project.getDoc(args.docId);
       const r = mirrorRig(doc, args.fromDirection, args.toDirection);
-      return { data: { ...r, directions: doc.rig!.directions, drawOrder: doc.rig!.drawOrder[args.toDirection] } };
+      const data = { ...r, directions: doc.rig!.directions, drawOrder: doc.rig!.drawOrder[args.toDirection] };
+      return args.preview ? { data, images: [framePreview(project, doc, r.frame)] } : { data };
     },
   });
 

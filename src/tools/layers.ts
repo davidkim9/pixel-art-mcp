@@ -45,6 +45,7 @@ export function registerLayerFrameTools(register: Register, project: Project): v
     title: "Remove layer",
     description: "Delete a layer and its pixels in every frame.",
     input: { docId: zDocId, layerId: z.string() },
+    destructive: true,
     mutates: (a) => a.docId,
     handler: (args) => {
       removeLayer(project.getDoc(args.docId), args.layerId);
@@ -156,6 +157,7 @@ export function registerLayerFrameTools(register: Register, project: Project): v
     title: "Remove frame",
     description: "Delete a frame (all layers).",
     input: { docId: zDocId, frame: z.number().int().min(0) },
+    destructive: true,
     mutates: (a) => a.docId,
     handler: (args) => {
       removeFrame(project.getDoc(args.docId), args.frame);

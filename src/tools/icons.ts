@@ -4,7 +4,7 @@ import { applyIconStyle, createIconSet, exportIconAtlas } from "../icons.js";
 import type { IconStyle } from "../types.js";
 import type { Project } from "../project.js";
 import { fail } from "../util/errors.js";
-import { checkColor, zColor, zDocId } from "./helpers.js";
+import { checkColor, docPreview, zColor, zDocId, zPreview } from "./helpers.js";
 import type { Register } from "./helpers.js";
 
 export function registerIconTools(register: Register, project: Project): void {
@@ -49,6 +49,7 @@ export function registerIconTools(register: Register, project: Project): void {
       docId: zDocId,
       outline: z.union([zColor, z.object({ color: zColor, connectivity: z.union([z.literal(4), z.literal(8)]).optional() }), z.null()]).optional(),
       shadow: z.union([zColor, z.object({ color: zColor, dx: z.number().int().optional(), dy: z.number().int().optional() }), z.null()]).optional(),
+      preview: zPreview,
     },
     mutates: (a) => a.docId,
     handler: (args) => {
@@ -79,7 +80,8 @@ export function registerIconTools(register: Register, project: Project): void {
       if (style.shadow) checkColor(project, doc, style.shadow.color, "shadow color");
       const result = applyIconStyle(doc, style);
       doc.icon = { size: doc.icon?.size ?? doc.width, margin: doc.icon?.margin ?? 0, style };
-      return { data: { style, ...result, layers: doc.layers.map((l) => l.id) } };
+      const data = { style, ...result, layers: doc.layers.map((l) => l.id) };
+      return args.preview ? { data, images: [docPreview(project, doc)] } : { data };
     },
   });
 

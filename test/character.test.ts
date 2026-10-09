@@ -77,6 +77,16 @@ describe("characters", () => {
     expect(manifest).toContain('"character": {');
   });
 
+  it("flattens character frames in each direction's draw order", async () => {
+    const id = await buildCharacter(h);
+    await h.ok("export_spritesheet", { docId: id, name: "hero_sheet", padding: 0, extrude: 0 });
+    const meta = JSON.parse(fs.readFileSync(path.join(h.root, "assets/hero_sheet.json"), "utf8"));
+    const png = decodePng(fs.readFileSync(path.join(h.root, "assets/hero_sheet.png")));
+    const right = meta.frames[3].rect;
+    // Facing right, hand_l is drawn behind the body (layer order would put it on top).
+    expect(png.indices![(right.y + 17) * png.width + right.x + 18]).toBe(13);
+  });
+
   it("exports one PNG per part and direction in parts mode", async () => {
     const id = await buildCharacter(h);
     const out = await h.ok("export_character", { docId: id, mode: "parts", name: "hero_parts" });

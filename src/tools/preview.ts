@@ -7,7 +7,8 @@ import { checkFrame, compositeIndexed, exportLayers, framesForTag } from "../doc
 import { encodeGif } from "../gif.js";
 import { paletteRgb } from "../palette.js";
 import type { Project } from "../project.js";
-import { AffineBuffer, composeFrame } from "../render/compose.js";
+import { assemble } from "../character.js";
+import { AffineBuffer, affineFromIndices, composeFrame } from "../render/compose.js";
 import type { Background } from "../render/compose.js";
 import { autoScale, blitAffine, clampScale, renderCanvasView, renderSheet, tileAffine } from "../render/previews.js";
 import type { SheetCell } from "../render/previews.js";
@@ -181,7 +182,9 @@ export function registerPreviewTools(register: Register, project: Project): void
       const cells: SheetCell[] = docs.map((d, i) => {
         const frame = args.frames?.[i] ?? 0;
         checkFrame(d, frame);
-        const own = composeFrame(d, paletteRgb(project.paletteFor(d)), frame, { showGuides: false });
+        const own = d.rig?.directions[frame]
+          ? affineFromIndices(assemble(d, d.rig.directions[frame]!).pixels, d.width, d.height, paletteRgb(project.paletteFor(d)))
+          : composeFrame(d, paletteRgb(project.paletteFor(d)), frame, { showGuides: false });
         const buf = new AffineBuffer(maxW, maxH);
         blitAffine(buf, own, Math.floor((maxW - d.width) / 2), maxH - d.height);
         return { buf, title: d.name, subtitle: `${d.width}x${d.height}` };

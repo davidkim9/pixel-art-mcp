@@ -11,7 +11,7 @@ import { TEST_MAP, defaultTerrainLegend, edgePoint, frameLabel, parseTerrainMap 
 import { analyzeSeams } from "../tileset/seams.js";
 import { checkTransitionSet, createTransitionSet, exportTileset, generateAutotile, requireTemplate, renderTerrain } from "../tileset/sets.js";
 import { fail } from "../util/errors.js";
-import { zDocId } from "./helpers.js";
+import { docPreview, zDocId, zPreview } from "./helpers.js";
 import type { Register } from "./helpers.js";
 
 export function registerTilesetTools(register: Register, project: Project): void {
@@ -126,6 +126,7 @@ export function registerTilesetTools(register: Register, project: Project): void
       sources: z.array(z.number().int().min(0)).optional().describe("corner15: masks of hand-drawn tiles (default: every non-empty tile)"),
       overwrite: z.boolean().optional(),
       layerId: z.string().optional(),
+      preview: zPreview,
     },
     mutates: (a) => a.docId,
     handler: (args) => {
@@ -134,7 +135,8 @@ export function registerTilesetTools(register: Register, project: Project): void
       if (args.template && args.template !== template) fail(`This document is a ${template} set, not ${args.template}.`);
       const layerId = resolveLayerId(doc, args.layerId);
       const report = generateAutotile(doc, args.sources, args.overwrite ?? false, layerId);
-      return { data: { template, ...report, next: "Review with render_frames / check_transition_set; hand-draw anything that looks wrong (especially diagonals)." } };
+      const data = { template, ...report, next: "Review with render_frames / check_transition_set; hand-draw anything that looks wrong (especially diagonals)." };
+      return args.preview ? { data, images: [docPreview(project, doc)] } : { data };
     },
   });
 
