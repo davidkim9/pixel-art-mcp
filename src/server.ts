@@ -1,4 +1,6 @@
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { RootsListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import { Project } from "./project.js";
 import type { ProjectSettings } from "./types.js";
 import { makeRegister } from "./tools/helpers.js";
@@ -18,7 +20,7 @@ import { registerTilesetTools } from "./tools/tileset.js";
 export const SERVER_NAME = "pixel-art-mcp";
 export const SERVER_VERSION = "0.1.0";
 
-export const INSTRUCTIONS = `Pixel art editor for indexed-color game assets (sprites, layered characters, seamless tilesets, effects, icons) exported as PNG + metadata for a Three.js billboard game.
+export const INSTRUCTIONS = `Pixel art editor for indexed-color assets (sprites, layered characters, seamless tilesets, effects, icons), exported as indexed PNGs with JSON metadata.
 
 Every pixel is a palette index (0 = transparent). Your only view of the canvas is the preview images the tools return, so look often.
 
@@ -55,5 +57,27 @@ export function createServer(root: string, settings: Partial<ProjectSettings> = 
   registerIconTools(register, project);
   registerImportTools(register, project);
   registerExportTools(register, project);
+  trackClientRoots(server, project);
   return { server, project, tools };
+}
+
+/** Directories the client shares (MCP roots, e.g. folders added to a Claude Code session) become readable. */
+function trackClientRoots(server: McpServer, project: Project): void {
+  const refresh = async () => {
+    if (!server.server.getClientCapabilities()?.roots) return;
+    try {
+      const { roots } = await server.server.listRoots();
+      project.clientRoots = roots.filter((r) => r.uri.startsWith("file://")).map((r) => fileURLToPath(r.uri));
+    } catch {
+      // The client didn't answer; keep the project root, outputDir and importRoots.
+    }
+  };
+  const previous = server.server.oninitialized;
+  server.server.oninitialized = () => {
+    previous?.();
+    void refresh();
+  };
+  server.server.setNotificationHandler(RootsListChangedNotificationSchema, async () => {
+    await refresh();
+  });
 }

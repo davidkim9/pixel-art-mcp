@@ -176,12 +176,12 @@ describe("previews", () => {
 });
 
 describe("export", () => {
-  it("exports an indexed PNG, sidecar metadata and TS manifest deterministically", async () => {
+  it("exports an indexed PNG and sidecar metadata deterministically", async () => {
     await h.ok("create_document", { name: "coin", kind: "sprite", width: 8, height: 8 });
     await h.ok("draw_ellipse", { docId: "doc_1", cx: 3.5, cy: 3.5, rx: 3.5, ry: 3.5, c: 10, filled: true });
     const out = await h.ok("export_png", { docId: "doc_1" });
     expect(out.data.files).toEqual(["assets/coin.png", "assets/coin.json"]);
-    expect(out.data.manifest).toBe("assets/assets.generated.ts");
+    expect(fs.readdirSync(path.join(h.root, "assets")).sort()).toEqual(["coin.json", "coin.png"]);
     const pngPath = path.join(h.root, "assets/coin.png");
     const png = fs.readFileSync(pngPath);
     const dec = decodePng(png);
@@ -195,12 +195,8 @@ describe("export", () => {
       image: "coin.png",
       size: { w: 8, h: 8 },
       pixelsPerUnit: 16,
-      frames: [{ name: "coin_0", rect: { x: 0, y: 0, w: 8, h: 8 }, uv: { offsetX: 0, offsetY: 0, repeatX: 1, repeatY: 1 }, pivotPx: { x: 4, y: 4 }, center: { x: 0.5, y: 0.5 } }],
     });
-    const manifest = fs.readFileSync(path.join(h.root, "assets/assets.generated.ts"), "utf8");
-    expect(manifest).toContain('"coin": {');
-    expect(manifest).toContain('"url": "assets/coin.png"');
-    expect(manifest).toContain("export type AssetName = keyof typeof assets;");
+    expect(meta.frames).toEqual([{ name: "coin_0", rect: { x: 0, y: 0, w: 8, h: 8 }, durationMs: 100, pivotPx: { x: 4, y: 4 } }]);
     await h.ok("export_png", { docId: "doc_1" });
     expect(fs.readFileSync(pngPath).equals(png)).toBe(true);
   });
@@ -213,8 +209,7 @@ describe("export", () => {
     const dec = decodePng(fs.readFileSync(path.join(h.root, "assets/items/gem.png")));
     const meta = JSON.parse(dec.texts.find((t) => t.keyword === "pixelmcp")!.text);
     expect(meta.image).toBe("gem.png");
-    const manifest = fs.readFileSync(path.join(h.root, "assets/assets.generated.ts"), "utf8");
-    expect(manifest).toContain('"items/gem"');
+    expect(meta.name).toBe("items/gem");
   });
 
   it("blocks export on validation errors", async () => {

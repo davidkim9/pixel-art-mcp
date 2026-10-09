@@ -161,7 +161,7 @@ export function registerPreviewTools(register: Register, project: Project): void
     title: "Render in context 🖼",
     description:
       "Several assets side by side at the same scale, bottom-aligned, to check that sizes and styles match. frames: frame per document " +
-      "(default 0). background: \"checker\" (default) or a hex color such as the game's ground color.",
+      "(default 0). background: \"checker\" (default) or a hex color.",
     input: {
       docIds: z.array(z.string()).min(1).max(24),
       layout: z.enum(["row", "grid"]).optional(),

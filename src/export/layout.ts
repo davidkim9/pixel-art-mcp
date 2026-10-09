@@ -79,7 +79,7 @@ export function checkPaddingExtrude(padding: number, extrude: number): void {
 
 /**
  * Builds an indexed atlas. Each frame's edge pixels are duplicated `extrude`
- * pixels outward into the padding (prevents texture bleeding).
+ * pixels outward into the padding.
  */
 export function buildAtlas(
   frames: Array<{ pixels: Uint8Array; w: number; h: number }>,

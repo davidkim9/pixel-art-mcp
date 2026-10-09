@@ -42,7 +42,7 @@ export function registerProjectTools(register: Register, project: Project): void
     title: "Configure project",
     description:
       "Set project settings (all optional): pixelsPerUnit (16), outputDir (\"./assets\", relative to the project root), defaultPaletteId, " +
-      "atlasPadding (2), atlasExtrude (1), metadataMode (\"sidecar\" | \"embedded\" | \"both\"), emitTsManifest (true), " +
+      "atlasPadding (2), atlasExtrude (1), metadataMode (\"sidecar\" | \"embedded\" | \"both\"), " +
       "importRoots (extra directories assets may be read from), characterExport (\"atlas\" | \"parts\"). Returns the full settings.",
     input: {
       pixelsPerUnit: z.number().positive().optional(),
@@ -51,7 +51,6 @@ export function registerProjectTools(register: Register, project: Project): void
       atlasPadding: z.number().int().min(0).max(64).optional(),
       atlasExtrude: z.number().int().min(0).max(32).optional(),
       metadataMode: z.enum(["sidecar", "embedded", "both"]).optional(),
-      emitTsManifest: z.boolean().optional(),
       importRoots: z.array(z.string()).optional(),
       characterExport: z.enum(["atlas", "parts"]).optional(),
     },

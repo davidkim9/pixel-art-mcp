@@ -231,7 +231,7 @@ export function registerLayerFrameTools(register: Register, project: Project): v
     title: "Set pivot",
     description:
       "Set the pivot (anchor) in canvas pixels for all frames, or for frames frame..to. Coordinates are continuous: (0,0) is the top-left corner, " +
-      "(width/2, height) is bottom-center (feet). Exported as pivotPx and THREE.Sprite center. Default: center (characters: bottom-center).",
+      "(width/2, height) is bottom-center (feet). Exported as pivotPx in the metadata. Default: center (characters: bottom-center).",
     input: {
       docId: zDocId,
       x: z.number(),

@@ -1,6 +1,6 @@
 /**
- * Data model (spec §4). These types are plain data so they can be shared with
- * the game and serialized to the native JSON project format.
+ * Data model (spec §4). These types are plain data, serialized to the native
+ * JSON project format.
  */
 
 export type PaletteIndex = number; // 0 = transparent
@@ -175,7 +175,6 @@ export interface ProjectSettings {
   atlasPadding: number;
   atlasExtrude: number;
   metadataMode: MetadataMode;
-  emitTsManifest: boolean;
   /** Directories the server may read existing assets from (besides the project root and outputDir). */
   importRoots: string[];
   /** Character export format: one atlas, or one PNG per part and direction. */
@@ -188,7 +187,6 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   atlasPadding: 2,
   atlasExtrude: 1,
   metadataMode: "sidecar",
-  emitTsManifest: true,
   importRoots: [],
   characterExport: "atlas",
 };

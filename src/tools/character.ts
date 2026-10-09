@@ -198,7 +198,7 @@ export function registerCharacterTools(register: Register, project: Project): vo
     title: "Export character",
     description:
       "Export a character. mode \"atlas\" (default from project settings): one packed PNG with every part × direction cropped to its pixels; metadata " +
-      "frames carry part, direction, offsetPx (crop position in the canvas), pivotPx/center at the part's pivot, plus a character block with parts, " +
+      "frames carry part, direction, offsetPx (crop position in the canvas) and pivotPx at the part's pivot, plus a character block with parts, " +
       "parents, attach points, draw orders, mirrors and poses. mode \"parts\": name_<part>_<direction>.png per part plus one name.json.",
     input: { docId: zDocId, mode: z.enum(["atlas", "parts"]).optional(), name: z.string().optional() },
     handler: (args) => {

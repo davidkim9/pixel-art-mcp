@@ -12,7 +12,7 @@ export function registerExportTools(register: Register, project: Project): void 
     title: "Export PNG",
     description:
       "Export one frame (default 0) as a single indexed PNG (palette embedded, index 0 transparent) plus metadata, to outputDir/<name>.png. " +
-      "Visible non-guide layers are flattened; additive layers go to <name>_glow.png. Validation errors block the export. Regenerates assets.generated.ts.",
+      "Visible non-guide layers are flattened; additive layers go to <name>_glow.png. Validation errors block the export.",
     input: { docId: zDocId, frame: z.number().int().min(0).optional(), name: z.string().optional().describe("export name (default: document name); may contain / for subfolders") },
     handler: (args) => {
       const doc = project.getDoc(args.docId);
@@ -25,7 +25,7 @@ export function registerExportTools(register: Register, project: Project): void 
     name: "export_spritesheet",
     title: "Export spritesheet",
     description:
-      "Export all frames (or one tag) as an indexed PNG sheet + metadata (frame rects, Three.js uv offset/repeat, durations, tags, pivot, Sprite.center). " +
+      "Export all frames (or one tag) as an indexed PNG sheet + metadata (frame rects, durations, tags, pivots). " +
       "layout: row | grid | packed (packed trims each frame; offsetPx gives its position in the canvas). padding/extrude default to project settings. " +
       "Additive layers export as <name>_glow.png with the same layout.",
     input: {

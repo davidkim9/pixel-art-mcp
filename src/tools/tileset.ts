@@ -228,7 +228,7 @@ export function registerTilesetTools(register: Register, project: Project): void
     title: "Export tileset",
     description:
       "Export a tileset as one indexed PNG atlas with padding + extrusion and metadata listing each tile's rect and its corner mask or blob mask. " +
-      "corner15 sets use a 4×4 grid in mask order (slot 0 = mask 0, empty in overlay mode) so frameIndex === mask at runtime; blob47 metadata includes " +
+      "corner15 sets use a 4×4 grid in mask order (slot 0 = mask 0, empty in overlay mode) so the frame index equals the mask; blob47 metadata includes " +
       "a 256-entry maskToFrame table. Validation errors (missing tiles, edge mismatches) block the export.",
     input: { docId: zDocId, columns: z.number().int().min(1).optional(), name: z.string().optional() },
     handler: (args) => {

@@ -94,7 +94,7 @@ export function exportCharacter(project: Project, doc: Document, opts: { mode?: 
   const metaFrames = frames.map((f) => {
     const image = `${target.base}_${f.name}.png`;
     files.push({ path: path.join(target.dir, image), data: encodeIndexedPng({ width: f.w, height: f.h, indices: buildAtlas([f], { width: f.w, height: f.h, positions: [{ x: 0, y: 0 }] }, 0), palette }) });
-    return { ...frameMeta(f, { x: 0, y: 0 }, f.w, f.h), image };
+    return { ...frameMeta(f, { x: 0, y: 0 }), image };
   });
   const metadata: AssetMetadata = {
     version: METADATA_VERSION,

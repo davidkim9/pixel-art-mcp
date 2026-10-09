@@ -1,7 +1,7 @@
 {
   "name": "pixel-art-mcp",
   "version": "0.1.0",
-  "description": "MCP server for creating indexed-color pixel art (sprites, characters, tilesets, effects, icons) for TypeScript + Three.js billboard games",
+  "description": "MCP server for creating indexed-color pixel art (sprites, characters, tilesets, effects, icons) as PNG files",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/davidkim9/pixel-art-mcp.git"
@@ -30,7 +30,6 @@
     "pixel-art",
     "sprites",
     "tileset",
-    "three.js",
     "aseprite"
   ],
   "dependencies": {

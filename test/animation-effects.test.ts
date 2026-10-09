@@ -71,7 +71,7 @@ describe("frames and tags", () => {
 });
 
 describe("spritesheet export", () => {
-  it("lays out a row with padding and extrusion and exact uv/center values", async () => {
+  it("lays out a row with padding and extrusion", async () => {
     const id = await makeFireball();
     const out = await h.ok("export_spritesheet", { docId: id, layout: "row" });
     expect(out.data.size).toEqual({ w: 162, h: 34 });
@@ -81,17 +81,10 @@ describe("spritesheet export", () => {
     expect(f0).toEqual({
       name: "fireball_0",
       rect: { x: 2, y: 2, w: 30, h: 30 },
-      uv: { offsetX: 2 / 162, offsetY: 2 / 34, repeatX: 30 / 162, repeatY: 30 / 34 },
       durationMs: 80,
       pivotPx: { x: 15, y: 15 },
-      center: { x: 0.5, y: 0.5 },
     });
     expect(meta.frames[4].rect).toEqual({ x: 130, y: 2, w: 30, h: 30 });
-    for (const f of meta.frames) {
-      // §11.2: offsetY = 1 - (rect.y + rect.h) / imageHeight
-      expect(f.uv.offsetY).toBeCloseTo(1 - (f.rect.y + f.rect.h) / meta.size.h, 12);
-      expect(f.center.y).toBeCloseTo(1 - f.pivotPx.y / f.rect.h, 12);
-    }
     expect(meta.tags).toEqual([{ name: "loop", from: 0, to: 4, direction: "forward" }]);
 
     // Extrusion: the 1px ring around frame 4 (radius 14 touches the frame edge) duplicates its edge pixels.
@@ -106,9 +99,6 @@ describe("spritesheet export", () => {
     for (let x = r.x; x < r.x + r.w; x++) expect(at(x, r.y - 1)).toBe(at(x, r.y));
     // Padding between frames beyond the extrusion stays transparent.
     expect(at(0, 0)).toBe(0);
-
-    const manifest = fs.readFileSync(path.join(h.root, "assets/assets.generated.ts"), "utf8");
-    expect(manifest).toContain('"loop": [\n        0,\n        4\n      ]');
 
     const again = fs.readFileSync(path.join(h.root, "assets/fireball.png"));
     await h.ok("export_spritesheet", { docId: id, layout: "row" });
@@ -125,7 +115,6 @@ describe("spritesheet export", () => {
     expect(f0.rect.w).toBe(13); // radius 6 → 13px wide
     expect(f0.offsetPx).toEqual({ x: 9, y: 9 });
     expect(f0.pivotPx).toEqual({ x: 6, y: 6 });
-    expect(f0.center).toEqual({ x: 6 / 13, y: 1 - 6 / 13 });
     expect(packed.data.size.w * packed.data.size.h).toBeLessThan(162 * 34);
     const bad = await h.call("export_spritesheet", { docId: id, padding: 1, extrude: 1 });
     expect(bad.isError).toBe(true);
@@ -146,8 +135,6 @@ describe("spritesheet export", () => {
     expect(main.indices![center]).not.toBe(2);
     const meta = JSON.parse(fs.readFileSync(path.join(h.root, "assets/fireball.json"), "utf8"));
     expect(meta.glow).toBe("fireball_glow.png");
-    const manifest = fs.readFileSync(path.join(h.root, "assets/assets.generated.ts"), "utf8");
-    expect(manifest).toContain('"glowUrl": "assets/fireball_glow.png"');
   });
 
   it("writes a GIF for human review", async () => {

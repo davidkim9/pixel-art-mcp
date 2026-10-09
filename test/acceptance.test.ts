@@ -96,8 +96,9 @@ describe("acceptance scenario (spec §15)", () => {
       expect(files).toEqual(listFiles(outB));
       expect(files).toEqual(expect.arrayContaining([
         "fireball.png", "fireball_glow.png", "fireball.json", "hero.png", "hero.json", "grass_dirt.png", "grass_dirt.json",
-        "items.png", "items.json", "assets.generated.ts", ".pixelmcp/previews/fireball.gif",
+        "items.png", "items.json", ".pixelmcp/previews/fireball.gif",
       ]));
+      expect(files.every((f) => /\.(png|json|gif)$/.test(f))).toBe(true);
       for (const f of files) expect(fs.readFileSync(path.join(outA, f)).equals(fs.readFileSync(path.join(outB, f))), `${f} differs between runs`).toBe(true);
 
       for (const f of files.filter((p) => p.endsWith(".png"))) {
@@ -115,14 +116,9 @@ describe("acceptance scenario (spec §15)", () => {
         const H = meta.size.h;
         expect([png.width, png.height]).toEqual([W, H]);
         for (const fr of meta.frames) {
-          // uv / center plug straight into texture.offset/repeat and Sprite.center
-          expect(fr.uv.offsetX).toBeCloseTo(fr.rect.x / W, 12);
-          expect(fr.uv.offsetY).toBeCloseTo(1 - (fr.rect.y + fr.rect.h) / H, 12);
-          expect(fr.uv.repeatX).toBeCloseTo(fr.rect.w / W, 12);
-          expect(fr.uv.repeatY).toBeCloseTo(fr.rect.h / H, 12);
-          expect(fr.center.x).toBeCloseTo(fr.pivotPx.x / fr.rect.w, 12);
-          expect(fr.center.y).toBeCloseTo(1 - fr.pivotPx.y / fr.rect.h, 12);
-          // 1px extrusion ring duplicates the edge (no bleeding with NearestFilter at frame borders)
+          // Frame rects lie inside the image.
+          expect(fr.rect.x >= 0 && fr.rect.y >= 0 && fr.rect.x + fr.rect.w <= W && fr.rect.y + fr.rect.h <= H).toBe(true);
+          // 1px extrusion ring duplicates the frame's edge pixels into the padding.
           if (meta.layout.extrude >= 1) {
             const at = (x: number, y: number) => png.indices![y * W + x];
             const { x, y, w, h } = fr.rect;
@@ -138,9 +134,6 @@ describe("acceptance scenario (spec §15)", () => {
           }
         }
       }
-
-      const manifest = fs.readFileSync(path.join(outA, "assets.generated.ts"), "utf8");
-      for (const key of ["fireball", "hero", "grass_dirt", "items"]) expect(manifest).toContain(`"${key}": {`);
     } finally {
       await a.close();
       await b.close();

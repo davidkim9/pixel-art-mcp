@@ -4,24 +4,13 @@ export const METADATA_VERSION = 1;
 /** PNG tEXt keyword for embedded metadata. */
 export const METADATA_KEYWORD = "pixelmcp";
 
-export interface UvRect {
-  offsetX: number;
-  offsetY: number;
-  repeatX: number;
-  repeatY: number;
-}
-
 export interface FrameMeta {
   name: string;
-  /** Image space: origin top-left, y down. */
+  /** Pixel rectangle in the image: origin top-left, y down. */
   rect: Rect;
-  /** Three.js texture space (flipY = true): plug into texture.offset / texture.repeat. */
-  uv: UvRect;
   durationMs: number;
-  /** Pivot relative to rect's top-left, image space. */
+  /** Pivot relative to rect's top-left, in pixels. */
   pivotPx: Point;
-  /** THREE.Sprite.center: (0,0) bottom-left, (1,1) top-right of the frame. */
-  center: Point;
   /** Where the rect's top-left sits in the source canvas (trimmed frames and character parts). */
   offsetPx?: Point;
   /** Separate image for this frame (character "parts" export). */
@@ -80,33 +69,22 @@ export interface ExportFrame {
   extra?: Record<string, unknown>;
 }
 
-export function uvFor(rect: Rect, W: number, H: number): UvRect {
-  return {
-    offsetX: rect.x / W,
-    offsetY: (H - rect.y - rect.h) / H, // = 1 - (rect.y + rect.h) / H
-    repeatX: rect.w / W,
-    repeatY: rect.h / H,
-  };
-}
-
-export function centerFor(pivot: Point, rect: Rect): Point {
-  return {
-    x: rect.w === 0 ? 0.5 : pivot.x / rect.w,
-    y: rect.h === 0 ? 0.5 : (rect.h - pivot.y) / rect.h, // = 1 - pivotPx.y / rect.h
-  };
-}
-
-export function frameMeta(f: ExportFrame, pos: Point, W: number, H: number): FrameMeta {
+export function frameMeta(f: ExportFrame, pos: Point): FrameMeta {
   const rect = { x: pos.x, y: pos.y, w: f.w, h: f.h };
   const meta: FrameMeta = {
     name: f.name,
     rect,
-    uv: uvFor(rect, W, H),
     durationMs: f.durationMs,
     pivotPx: { x: f.pivot.x, y: f.pivot.y },
-    center: centerFor(f.pivot, rect),
   };
   if (f.offset) meta.offsetPx = { x: f.offset.x, y: f.offset.y };
   if (f.extra) Object.assign(meta, f.extra);
   return meta;
+}
+
+/** True for pixel-art-mcp metadata (sidecar JSON or embedded tEXt). */
+export function isAssetMetadata(value: unknown): value is AssetMetadata {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.version === "number" && Array.isArray(v.frames) && typeof v.size === "object" && (typeof v.image === "string" || v.image === undefined);
 }

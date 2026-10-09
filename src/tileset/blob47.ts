@@ -26,7 +26,7 @@ export function reduceBlobMask(mask: number): number {
 /** The 47 reduced masks in ascending order; frame i of a blob47 set holds BLOB47_MASKS[i]. */
 export const BLOB47_MASKS: number[] = [...new Set(Array.from({ length: 256 }, (_, m) => reduceBlobMask(m)))].sort((a, b) => a - b);
 
-/** Raw 8-bit neighbour mask → frame index (256 entries), for the game. */
+/** Raw 8-bit neighbour mask → frame index (256 entries). */
 export const BLOB_MASK_TO_FRAME: number[] = Array.from({ length: 256 }, (_, m) => BLOB47_MASKS.indexOf(reduceBlobMask(m)));
 
 export function blobMaskName(mask: number): string {

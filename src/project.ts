@@ -41,6 +41,8 @@ export class Project {
   docCounter = 0;
   selections = new Map<string, Uint8Array>();
   clipboard?: Clipboard;
+  /** Directories the MCP client shares with the server (roots/list), also readable. */
+  clientRoots: string[] = [];
   private history = new Map<string, Document[]>();
 
   constructor(root: string, settings: Partial<ProjectSettings> = {}) {
@@ -128,9 +130,9 @@ export class Project {
     return path.join(this.outputDir, STATE_DIR);
   }
 
-  /** Directories files may be read from: project root, outputDir, importRoots. */
+  /** Directories files may be read from: project root, outputDir, importRoots and the client's roots. */
   readRoots(): string[] {
-    return [this.root, this.outputDir, ...this.settings.importRoots.map((r) => path.resolve(this.root, r))].map(realpathOrSelf);
+    return [this.root, this.outputDir, ...this.settings.importRoots.map((r) => path.resolve(this.root, r)), ...this.clientRoots].map(realpathOrSelf);
   }
 
   /** Resolves a path for reading; it must exist inside an allowed root. */
@@ -139,7 +141,7 @@ export class Project {
     if (!fs.existsSync(abs)) fail(`File not found: ${p}`);
     const real = fs.realpathSync(abs);
     if (!this.readRoots().some((r) => isWithin(real, r))) {
-      fail(`Access denied: ${p} is outside the project directory and configured importRoots (${this.readRoots().join(", ")}).`);
+      fail(`Access denied: ${p} is outside the project directory, importRoots and the session's directories (${this.readRoots().join(", ")}).`);
     }
     return real;
   }
@@ -151,7 +153,7 @@ export class Project {
     return abs;
   }
 
-  /** Path relative to the project root with forward slashes (for reports and manifest URLs). */
+  /** Path relative to the project root with forward slashes (for reports). */
   displayPath(abs: string): string {
     const rel = path.relative(this.root, abs);
     return (rel.startsWith("..") || path.isAbsolute(rel) ? abs : rel).split(path.sep).join("/");
@@ -227,7 +229,9 @@ export class Project {
       documents: Array<Omit<Document, "cels"> & { cels: Record<string, string> }>;
     };
     check(data.format === "pixel-art-mcp-project", `${file} is not a pixel-art-mcp project file`);
-    this.settings = { ...structuredClone(DEFAULT_SETTINGS), ...data.settings };
+    // Keep only known settings (older project files may carry removed ones).
+    const known = Object.fromEntries(Object.entries(data.settings ?? {}).filter(([k]) => k in DEFAULT_SETTINGS || k === "defaultPaletteId"));
+    this.settings = { ...structuredClone(DEFAULT_SETTINGS), ...known };
     this.docCounter = data.docCounter ?? 0;
     this.palettes = new Map(data.palettes.map((p) => [p.id, p]));
     this.docs = new Map();

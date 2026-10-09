@@ -66,15 +66,12 @@ describe("characters", () => {
     const meta = JSON.parse(fs.readFileSync(path.join(h.root, "assets/hero.json"), "utf8"));
     const headDown = meta.frames.find((f: { name: string }) => f.name === "head_down");
     expect(headDown).toMatchObject({ part: "head", direction: "down", offsetPx: { x: 10, y: 4 }, rect: { w: 12, h: 12 }, pivotPx: { x: 6, y: 11 } });
-    expect(headDown.center).toEqual({ x: 0.5, y: 1 / 12 });
     expect(meta.character.directions).toEqual(["down", "up", "left", "right"]);
     expect(meta.character.poses.map((p: { name: string }) => p.name)).toContain("walk_3");
     expect(meta.character.originPx).toEqual({ x: 16, y: 32 });
     expect(meta.layout).toEqual({ type: "character", mode: "atlas", padding: 2, extrude: 1 });
     const png = decodePng(fs.readFileSync(path.join(h.root, "assets/hero.png")));
     expect(png.width).toBe(meta.size.w);
-    const manifest = fs.readFileSync(path.join(h.root, "assets/assets.generated.ts"), "utf8");
-    expect(manifest).toContain('"character": {');
   });
 
   it("flattens character frames in each direction's draw order", async () => {
@@ -95,7 +92,6 @@ describe("characters", () => {
     const meta = JSON.parse(fs.readFileSync(path.join(h.root, "assets/hero_parts.json"), "utf8"));
     expect(meta.image).toBeUndefined();
     expect(meta.frames[0].image).toMatch(/^hero_parts_.*\.png$/);
-    const manifest = fs.readFileSync(path.join(h.root, "assets/assets.generated.ts"), "utf8");
-    expect(manifest).toContain('"url": "assets/hero_parts_head_down.png"');
+    expect(fs.existsSync(path.join(h.root, "assets", meta.frames[0].image))).toBe(true);
   });
 });

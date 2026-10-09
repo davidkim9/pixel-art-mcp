@@ -147,7 +147,7 @@ export function assembleExport(o: AssembleOptions): ExportResult {
     pixelsPerUnit: project.settings.pixelsPerUnit,
     paletteId: doc.paletteId,
     layout: o.layoutMeta,
-    frames: frames.map((f, i) => frameMeta(f, layout.positions[i]!, layout.width, layout.height)),
+    frames: frames.map((f, i) => frameMeta(f, layout.positions[i]!)),
     tags: o.tags,
     ...o.extra,
   };
