@@ -206,12 +206,65 @@ const LIGHT_VECTORS: Record<LightDirection, [number, number]> = {
   "bottom-right": [1, 1],
 };
 
+/** 1D squared Euclidean distance transform (Felzenszwalb & Huttenlocher). */
+function edt1d(f: Float64Array, n: number): Float64Array {
+  const d = new Float64Array(n);
+  const v = new Int32Array(n);
+  const z = new Float64Array(n + 1);
+  let k = 0;
+  z[0] = -Infinity;
+  z[1] = Infinity;
+  const sect = (q: number, p: number) => (f[q]! + q * q - (f[p]! + p * p)) / (2 * q - 2 * p);
+  for (let q = 1; q < n; q++) {
+    let s = sect(q, v[k]!);
+    while (s <= z[k]!) {
+      k--;
+      s = sect(q, v[k]!);
+    }
+    k++;
+    v[k] = q;
+    z[k] = s;
+    z[k + 1] = Infinity;
+  }
+  k = 0;
+  for (let q = 0; q < n; q++) {
+    while (z[k + 1]! < q) k++;
+    d[q] = (q - v[k]!) ** 2 + f[v[k]!]!;
+  }
+  return d;
+}
+
+/** Euclidean distance from each shape pixel to the nearest pixel outside the shape (canvas edges count as outside). */
+export function distanceToEdge(shape: Uint8Array, w: number, h: number): Float64Array {
+  const W = w + 2;
+  const H = h + 2;
+  const BIG = 1e12;
+  const grid = new Float64Array(W * H);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (shape[y * w + x]) grid[(y + 1) * W + x + 1] = BIG;
+  const col = new Float64Array(H);
+  for (let x = 0; x < W; x++) {
+    for (let y = 0; y < H; y++) col[y] = grid[y * W + x]!;
+    const d = edt1d(col, H);
+    for (let y = 0; y < H; y++) grid[y * W + x] = d[y]!;
+  }
+  const row = new Float64Array(W);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) row[x] = grid[y * W + x]!;
+    const d = edt1d(row, W);
+    for (let x = 0; x < W; x++) grid[y * W + x] = d[x]!;
+  }
+  const out = new Float64Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (shape[y * w + x]) out[y * w + x] = Math.sqrt(grid[(y + 1) * W + x + 1]!);
+  return out;
+}
+
 /**
  * Basic directional shading: the shape is treated as a dome (height from the
- * distance to its edge, flattening after `rim` pixels), lit by a light from
- * `light` at 45° elevation, and the Lambert term is quantized to the ramp.
- * Flat interiors land on a middle ramp step, edges facing the light on the
- * lightest step and edges facing away on the darkest.
+ * Euclidean distance to its edge; `rim` limits the bevel width, default = the
+ * whole shape), lit by a light from `light` at ~56° elevation. Intensities are
+ * mapped relative to a flat, camera-facing surface: flat areas get the base
+ * step (second lightest), only strongly lit areas reach the lightest step, and
+ * the darker steps spread over the side facing away.
  */
 export function shadeWrites(
   shape: Uint8Array,
@@ -222,42 +275,11 @@ export function shadeWrites(
   rim?: number,
 ): Map<number, number> {
   const writes = new Map<number, number>();
-  const dist = new Float64Array(w * h);
-  const queue: number[] = [];
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const p = y * w + x;
-      if (!shape[p]) continue;
-      const edge = N4.some(([dx, dy]) => {
-        const nx = x + dx;
-        const ny = y + dy;
-        return nx < 0 || ny < 0 || nx >= w || ny >= h || !shape[ny * w + nx];
-      });
-      if (edge) {
-        dist[p] = 1;
-        queue.push(p);
-      }
-    }
-  }
-  for (let i = 0; i < queue.length; i++) {
-    const p = queue[i]!;
-    const x = p % w;
-    const y = (p - x) / w;
-    for (const [dx, dy] of N8) {
-      const nx = x + dx;
-      const ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-      const q = ny * w + nx;
-      if (shape[q] && dist[q] === 0) {
-        dist[q] = dist[p]! + 1;
-        queue.push(q);
-      }
-    }
-  }
+  const dist = distanceToEdge(shape, w, h);
   let dmax = 0;
   for (let i = 0; i < dist.length; i++) if (dist[i]! > dmax) dmax = dist[i]!;
   if (dmax === 0) return writes;
-  const r = Math.max(1, rim ?? Math.min(dmax, 8));
+  const r = Math.max(1, rim ?? dmax);
   const height = new Float64Array(w * h);
   for (let i = 0; i < dist.length; i++) {
     if (!shape[i]) continue;
@@ -266,19 +288,22 @@ export function shadeWrites(
   }
   const hAt = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : height[y * w + x]!);
   const [lx, ly] = LIGHT_VECTORS[light];
-  const lz = 1;
+  const lz = 1.5;
   const llen = Math.hypot(lx, ly, lz);
+  const flat = lz / llen;
   const k = ramp.length;
+  const base = k >= 3 ? k - 2 : k - 1;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const p = y * w + x;
       if (!shape[p]) continue;
       const nx = (hAt(x - 1, y) - hAt(x + 1, y)) / 2;
       const ny = (hAt(x, y - 1) - hAt(x, y + 1)) / 2;
-      const nlen = Math.hypot(nx, ny, 1);
-      const lambert = Math.max(0, (nx * lx + ny * ly + lz) / (nlen * llen));
-      const intensity = 0.2 + 0.8 * lambert;
-      writes.set(p, ramp[Math.min(k - 1, Math.floor(intensity * k))]!);
+      const v = Math.max(0, (nx * lx + ny * ly + lz) / (Math.hypot(nx, ny, 1) * llen));
+      let idx: number;
+      if (v >= flat) idx = Math.floor(base + ((v - flat) / (1 - flat)) * (k - 1 - base) + 0.4);
+      else idx = Math.round((base * v) / flat);
+      writes.set(p, ramp[Math.min(k - 1, Math.max(0, idx))]!);
     }
   }
   return writes;

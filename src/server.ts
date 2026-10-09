@@ -9,6 +9,7 @@ import { registerPaletteTools } from "./tools/palette.js";
 import { registerPreviewTools } from "./tools/preview.js";
 import { registerProjectTools } from "./tools/project.js";
 import { registerSelectionTools } from "./tools/selection.js";
+import { registerShadingTools } from "./tools/shading.js";
 
 export const SERVER_NAME = "pixel-art-mcp";
 export const SERVER_VERSION = "0.1.0";
@@ -43,6 +44,7 @@ export function createServer(root: string, settings: Partial<ProjectSettings> = 
   registerLayerFrameTools(register, project);
   registerDrawingTools(register, project);
   registerSelectionTools(register, project);
+  registerShadingTools(register, project);
   registerPreviewTools(register, project);
   registerExportTools(register, project);
   return { server, project, tools };
