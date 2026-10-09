@@ -84,6 +84,20 @@ export function getRamp(p: Palette, name: string): number[] {
   return ramp;
 }
 
+/** Index of the palette's brightest color (used for guide layers). */
+export function brightestIndex(p: Palette): number {
+  let best = 1;
+  let bestL = -1;
+  for (let i = 1; i < p.colors.length; i++) {
+    const l = luminance(parseHexColor(p.colors[i]!));
+    if (l > bestL) {
+      bestL = l;
+      best = i;
+    }
+  }
+  return best;
+}
+
 /** Ramp-ordering problems (ramps must go dark → light), for warnings. */
 export function rampWarnings(p: Palette, indices: number[]): string[] {
   const warnings: string[] = [];

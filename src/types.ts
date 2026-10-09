@@ -101,10 +101,17 @@ export interface TilesetConfig {
   overlay?: boolean;
 }
 
+export interface IconStyle {
+  outline?: { color: number; connectivity: 4 | 8 } | null;
+  shadow?: { color: number; dx: number; dy: number } | null;
+}
+
 export interface IconConfig {
   size: number;
   /** Width of the safe-area margin in pixels. */
   margin: number;
+  /** Last style applied by apply_icon_style. */
+  style?: IconStyle;
 }
 
 /** How an imported document is written back by export_to_source. */

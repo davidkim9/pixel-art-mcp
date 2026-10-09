@@ -1,4 +1,4 @@
-import { getCel, getTagRanges } from "./document.js";
+import { compositeIndexed, getCel, getTagRanges } from "./document.js";
 import type { Project } from "./project.js";
 import { isWrapEnabled } from "./raster.js";
 import { rigWarnings } from "./character.js";
@@ -104,10 +104,38 @@ export function validateDocument(project: Project, doc: Document): ValidationRep
   }
 
   validateTileset(project, doc, report);
+  if (doc.icon) {
+    const outside = safeAreaViolations(doc);
+    if (outside.length) {
+      report.warnings.push({
+        check: "icon-safe-area",
+        message: `Icon content outside the ${doc.icon.margin}px safe area in frame(s) ${outside.map((o) => o.frame).join(", ")}.`,
+        details: outside,
+      });
+    }
+  }
   if (doc.rig) {
     for (const message of rigWarnings(doc).slice(0, MAX_LISTED)) report.warnings.push({ check: "rig-overlap", message });
   }
   return report;
+}
+
+/** Frames with exported pixels outside an icon set's safe area. */
+export function safeAreaViolations(doc: Document): Array<{ frame: number; pixels: number }> {
+  if (!doc.icon) return [];
+  const m = doc.icon.margin;
+  const out: Array<{ frame: number; pixels: number }> = [];
+  for (let f = 0; f < doc.frames.length; f++) {
+    const pixels = compositeIndexed(doc, f, (l) => l.visible && !l.guide);
+    let n = 0;
+    for (let y = 0; y < doc.height; y++) {
+      for (let x = 0; x < doc.width; x++) {
+        if (pixels[y * doc.width + x] && (x < m || y < m || x >= doc.width - m || y >= doc.height - m)) n++;
+      }
+    }
+    if (n) out.push({ frame: f, pixels: n });
+  }
+  return out;
 }
 
 function validateTileset(project: Project, doc: Document, report: ValidationReport): void {

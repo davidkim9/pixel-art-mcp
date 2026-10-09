@@ -1,13 +1,12 @@
-import { luminance, parseHexColor } from "../color.js";
 import { addLayer, compositeIndexed, createDocument, ensureCel, exportLayers } from "../document.js";
 import { assembleExport, collectFrames, defaultTarget, validateForExport } from "../export/exporters.js";
 import type { ExportResult, ExportTarget } from "../export/exporters.js";
 import { checkPaddingExtrude, layoutGrid } from "../export/layout.js";
 import type { ExportFrame } from "../export/metadata.js";
-import { paletteRgb } from "../palette.js";
+import { brightestIndex, paletteRgb } from "../palette.js";
 import type { Project } from "../project.js";
 import { AffineBuffer, affineFromIndices } from "../render/compose.js";
-import type { Document, Palette, TilesetTemplate } from "../types.js";
+import type { Document, TilesetTemplate } from "../types.js";
 import { check, fail } from "../util/errors.js";
 import { BLOB47_MASKS, BLOB_MASK_TO_FRAME, BLOB_SOURCES, NEIGHBOR_ORDER, blobFrameLabel, blobMaskAt, composeBlobTile } from "./blob47.js";
 import type { QuadrantVariant } from "./blob47.js";
@@ -16,19 +15,6 @@ import type { GeneratedTile } from "./corner15.js";
 import { checkTransitionSet, frameMask, requireTemplate, templateFrameCount, tileImages } from "./check.js";
 
 export { checkTransitionSet, frameMask, requireTemplate, templateFrameCount, tileImages };
-
-function brightestIndex(p: Palette): number {
-  let best = 1;
-  let bestL = -1;
-  for (let i = 1; i < p.colors.length; i++) {
-    const l = luminance(parseHexColor(p.colors[i]!));
-    if (l > bestL) {
-      bestL = l;
-      best = i;
-    }
-  }
-  return best;
-}
 
 /** Faint dots marking which parts of each tile are upper terrain. */
 function drawGuide(doc: Document, guideId: string, template: TilesetTemplate, color: number): void {
