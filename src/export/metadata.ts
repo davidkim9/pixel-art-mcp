@@ -41,7 +41,9 @@ export type LayoutMeta =
   | { type: "spritesheet"; layout: SheetLayout; padding: number; extrude: number; columns?: number; tag?: string }
   | { type: "tileset"; padding: number; extrude: number; columns: number }
   | { type: "icons"; padding: number; extrude: number; columns: number }
-  | { type: "character"; mode: "atlas" | "parts"; padding: number; extrude: number };
+  | { type: "character"; mode: "atlas" | "parts"; padding: number; extrude: number }
+  /** Frames written back to the rects of an imported third-party sheet. */
+  | { type: "source" };
 
 export interface AssetMetadata {
   version: number;

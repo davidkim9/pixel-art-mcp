@@ -187,6 +187,9 @@ export interface SpritesheetOptions {
 
 export function exportSpritesheet(project: Project, doc: Document, opts: SpritesheetOptions): ExportResult {
   const warnings = validateForExport(project, doc);
+  // An imported sheet re-exports with its original layout unless overridden.
+  const cfg = doc.source?.exportConfig?.type === "spritesheet" ? doc.source.exportConfig : undefined;
+  if (cfg) opts = { layout: cfg.layout, padding: cfg.padding, extrude: cfg.extrude, columns: cfg.columns, tag: cfg.tag, ...stripUndefined(opts) };
   const padding = opts.padding ?? project.settings.atlasPadding;
   const extrude = opts.extrude ?? project.settings.atlasExtrude;
   checkPaddingExtrude(padding, extrude);
@@ -205,6 +208,10 @@ export function exportSpritesheet(project: Project, doc: Document, opts: Sprites
   if (opts.columns !== undefined && layoutType === "grid") layoutMeta.columns = opts.columns;
   if (opts.tag !== undefined) layoutMeta.tag = opts.tag;
   return assembleExport({ project, doc, target, frames, layout, extrude, layoutMeta, tags: tagsFor(doc, frameIdx), warnings });
+}
+
+function stripUndefined<T extends object>(o: T): Partial<T> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
 /** Pixel-duplicating upscale of an export (export_to_source for sources imported at scale N). */

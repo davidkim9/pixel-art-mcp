@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { rgbKey, toHex } from "./color.js";
+import { paletteFromAseprite } from "./import/ase-import.js";
 import { BUILTIN_PALETTES, MAX_PALETTE_COLORS, parsePaletteText } from "./palette.js";
 import { decodePng } from "./png.js";
 import type { Project } from "./project.js";
@@ -42,13 +43,6 @@ export function paletteFromPng(buf: Uint8Array): PaletteSourceResult {
   return { colors, origin: "unique opaque colors of the image, in scan order" };
 }
 
-/** Pluggable reader for .aseprite palettes (registered by the import module). */
-let asepritePaletteReader: ((buf: Uint8Array) => PaletteSourceResult) | undefined;
-
-export function setAsepritePaletteReader(reader: (buf: Uint8Array) => PaletteSourceResult): void {
-  asepritePaletteReader = reader;
-}
-
 export function resolvePaletteSource(project: Project, source: string | string[]): PaletteSourceResult {
   if (Array.isArray(source)) return { colors: parsePaletteText(source.join("\n")).colors, origin: "hex color list" };
   const s = source.trim();
@@ -63,10 +57,7 @@ export function resolvePaletteSource(project: Project, source: string | string[]
     const buf = fs.readFileSync(file);
     const ext = path.extname(file).toLowerCase();
     if (ext === ".png") return paletteFromPng(buf);
-    if (ext === ".aseprite" || ext === ".ase") {
-      if (!asepritePaletteReader) fail("Aseprite support is not available.");
-      return asepritePaletteReader(buf);
-    }
+    if (ext === ".aseprite" || ext === ".ase") return paletteFromAseprite(buf);
     const parsed = parsePaletteText(buf.toString("utf8"));
     return { colors: parsed.colors, origin: `${parsed.format === "gpl" ? "GIMP .gpl" : "hex"} file ${path.basename(file)}`, name: parsed.name };
   }

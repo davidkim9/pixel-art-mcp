@@ -65,9 +65,10 @@ export function characterFrames(doc: Document): { frames: ExportFrame[]; warning
 export function exportCharacter(project: Project, doc: Document, opts: { mode?: "atlas" | "parts"; name?: string; target?: ExportTarget }): ExportResult {
   requireRig(doc);
   const warnings = validateForExport(project, doc);
-  const mode = opts.mode ?? project.settings.characterExport;
-  const padding = project.settings.atlasPadding;
-  const extrude = project.settings.atlasExtrude;
+  const cfg = doc.source?.exportConfig?.type === "character" ? doc.source.exportConfig : undefined;
+  const mode = opts.mode ?? cfg?.mode ?? project.settings.characterExport;
+  const padding = cfg?.padding ?? project.settings.atlasPadding;
+  const extrude = cfg?.extrude ?? project.settings.atlasExtrude;
   checkPaddingExtrude(padding, extrude);
   const target = opts.target ?? defaultTarget(project, doc, opts.name);
   const { frames, warnings: frameWarnings } = characterFrames(doc);

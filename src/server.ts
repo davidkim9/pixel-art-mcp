@@ -6,6 +6,7 @@ import { registerCharacterTools } from "./tools/character.js";
 import { registerDrawingTools } from "./tools/drawing.js";
 import { registerExportTools } from "./tools/export.js";
 import { registerIconTools } from "./tools/icons.js";
+import { registerImportTools } from "./tools/import.js";
 import { registerLayerFrameTools } from "./tools/layers.js";
 import { registerPaletteTools } from "./tools/palette.js";
 import { registerPreviewTools } from "./tools/preview.js";
@@ -52,6 +53,7 @@ export function createServer(root: string, settings: Partial<ProjectSettings> = 
   registerTilesetTools(register, project);
   registerCharacterTools(register, project);
   registerIconTools(register, project);
+  registerImportTools(register, project);
   registerExportTools(register, project);
   return { server, project, tools };
 }

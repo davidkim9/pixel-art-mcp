@@ -17,7 +17,7 @@ import { checkTransitionSet, frameMask, requireTemplate, templateFrameCount, til
 export { checkTransitionSet, frameMask, requireTemplate, templateFrameCount, tileImages };
 
 /** Faint dots marking which parts of each tile are upper terrain. */
-function drawGuide(doc: Document, guideId: string, template: TilesetTemplate, color: number): void {
+export function drawGuide(doc: Document, guideId: string, template: TilesetTemplate, color: number): void {
   const s = doc.width;
   const dots = (cel: Uint8Array, x0: number, y0: number, x1: number, y1: number) => {
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (x % 2 === 0 && y % 2 === 0) cel[y * s + x] = color;
@@ -74,6 +74,14 @@ export function createTransitionSet(
   }));
   drawGuide(doc, guide.id, opts.template, brightestIndex(project.getPalette(doc.paletteId)));
   return doc;
+}
+
+/** Adds the locked guide layer of a transition set (used when re-importing an exported set). */
+export function addTransitionGuide(project: Project, doc: Document): void {
+  const template = doc.tileset?.template;
+  if (!template || doc.layers.some((l) => l.id === "guide")) return;
+  const guide = addLayer(doc, "guide", { id: "guide", guide: true, locked: true });
+  drawGuide(doc, guide.id, template, brightestIndex(project.getPalette(doc.paletteId)));
 }
 
 export interface GenerateReport {
@@ -196,10 +204,12 @@ export function renderTerrain(project: Project, doc: Document, cells: boolean[][
 export function exportTileset(project: Project, doc: Document, opts: { columns?: number; name?: string; target?: ExportTarget }): ExportResult {
   if (doc.kind !== "tileset" && !doc.tileset) fail(`Document "${doc.id}" is not a tileset.`);
   const warnings = validateForExport(project, doc);
-  const padding = project.settings.atlasPadding;
-  const extrude = project.settings.atlasExtrude;
+  const cfg = doc.source?.exportConfig?.type === "tileset" ? doc.source.exportConfig : undefined;
+  const padding = cfg?.padding ?? project.settings.atlasPadding;
+  const extrude = cfg?.extrude ?? project.settings.atlasExtrude;
   checkPaddingExtrude(padding, extrude);
   const template = doc.tileset?.template;
+  opts = { ...opts, columns: opts.columns ?? cfg?.columns };
   const target = opts.target ?? defaultTarget(project, doc, opts.name);
   const base = target.assetName.split("/").pop()!;
   const frameIdx = doc.frames.map((_, i) => i);

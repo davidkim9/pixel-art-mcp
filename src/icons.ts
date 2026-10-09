@@ -31,18 +31,29 @@ export function createIconSet(project: Project, opts: { name: string; size: numb
   addLayer(doc, "icon", { id: "icon" });
   const guide = addLayer(doc, "guide", { id: "guide", guide: true, locked: true });
   doc.frames = Array.from({ length: opts.count }, (_, i) => ({ durationMs: 100, label: opts.names?.[i] ?? `icon_${i}` }));
-  // Guide: dots on the margin ring outside the safe area.
-  const color = brightestIndex(project.getPalette(doc.paletteId));
+  drawIconGuide(doc, guide.id, brightestIndex(project.getPalette(doc.paletteId)));
+  return doc;
+}
+
+/** Guide: dots on the margin ring outside the safe area. */
+export function drawIconGuide(doc: Document, guideId: string, color: number): void {
+  const m = doc.icon?.margin ?? 1;
   for (let f = 0; f < doc.frames.length; f++) {
-    const cel = ensureCel(doc, guide.id, f);
-    for (let y = 0; y < opts.size; y++) {
-      for (let x = 0; x < opts.size; x++) {
-        const outside = x < opts.margin || y < opts.margin || x >= opts.size - opts.margin || y >= opts.size - opts.margin;
-        if (outside && (x + y) % 2 === 0) cel[y * opts.size + x] = color;
+    const cel = ensureCel(doc, guideId, f);
+    for (let y = 0; y < doc.height; y++) {
+      for (let x = 0; x < doc.width; x++) {
+        const outside = x < m || y < m || x >= doc.width - m || y >= doc.height - m;
+        if (outside && (x + y) % 2 === 0) cel[y * doc.width + x] = color;
       }
     }
   }
-  return doc;
+}
+
+/** Adds the locked safe-area guide layer (used when re-importing an exported icon atlas). */
+export function addIconGuide(project: Project, doc: Document): void {
+  if (doc.layers.some((l) => l.id === "guide")) return;
+  const guide = addLayer(doc, "guide", { id: "guide", guide: true, locked: true });
+  drawIconGuide(doc, guide.id, brightestIndex(project.getPalette(doc.paletteId)));
 }
 
 /** Art = visible, non-guide, non-style normal layers. */
@@ -108,9 +119,11 @@ export function exportIconAtlas(project: Project, doc: Document, opts: { names?:
   const names = iconNames(doc, opts.names);
   names.forEach((n, i) => (doc.frames[i]!.label = n));
   const warnings = validateForExport(project, doc);
-  const padding = project.settings.atlasPadding;
-  const extrude = project.settings.atlasExtrude;
+  const cfg = doc.source?.exportConfig?.type === "icons" ? doc.source.exportConfig : undefined;
+  const padding = cfg?.padding ?? project.settings.atlasPadding;
+  const extrude = cfg?.extrude ?? project.settings.atlasExtrude;
   checkPaddingExtrude(padding, extrude);
+  opts = { ...opts, columns: opts.columns ?? cfg?.columns };
   const target = opts.target ?? defaultTarget(project, doc, opts.name);
   const frames = collectFrames(doc, doc.frames.map((_, i) => i), target.assetName.split("/").pop()!).map((f, i) => ({ ...f, name: names[i]! }));
   const columns = opts.columns ?? Math.ceil(Math.sqrt(frames.length));

@@ -118,9 +118,9 @@ export interface IconConfig {
 export type ExportConfig =
   | { type: "png" }
   | { type: "spritesheet"; layout: SheetLayout; padding: number; extrude: number; tag?: string; columns?: number }
-  | { type: "tileset"; columns?: number }
-  | { type: "icons"; columns?: number }
-  | { type: "character"; mode: "atlas" }
+  | { type: "tileset"; columns?: number; padding?: number; extrude?: number }
+  | { type: "icons"; columns?: number; padding?: number; extrude?: number }
+  | { type: "character"; mode: "atlas"; padding?: number; extrude?: number }
   | { type: "rects"; width: number; height: number; rects: Array<Rect & { offsetX: number; offsetY: number }> };
 
 export type SheetLayout = "row" | "grid" | "packed";
