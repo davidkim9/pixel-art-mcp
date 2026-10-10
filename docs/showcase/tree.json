@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "name": "tree",
+  "kind": "sprite",
+  "image": "tree.png",
+  "size": {
+    "w": 32,
+    "h": 40
+  },
+  "sourceSize": {
+    "w": 32,
+    "h": 40
+  },
+  "pixelsPerUnit": 16,
+  "paletteId": "otterisk_96",
+  "layout": {
+    "type": "png"
+  },
+  "frames": [
+    {
+      "name": "tree_0",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 40
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 16,
+        "y": 20
+      }
+    }
+  ],
+  "tags": []
+}

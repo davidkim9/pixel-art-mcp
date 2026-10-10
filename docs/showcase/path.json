@@ -1,0 +1,299 @@
+{
+  "version": 1,
+  "name": "path",
+  "kind": "tileset",
+  "image": "path.png",
+  "size": {
+    "w": 64,
+    "h": 64
+  },
+  "sourceSize": {
+    "w": 16,
+    "h": 16
+  },
+  "pixelsPerUnit": 16,
+  "paletteId": "otterisk_96",
+  "layout": {
+    "type": "tileset",
+    "padding": 0,
+    "extrude": 0,
+    "columns": 4
+  },
+  "frames": [
+    {
+      "name": "path_0",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 0,
+      "corners": "none"
+    },
+    {
+      "name": "path_1",
+      "rect": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 1,
+      "corners": "TL"
+    },
+    {
+      "name": "path_2",
+      "rect": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 2,
+      "corners": "TR"
+    },
+    {
+      "name": "path_3",
+      "rect": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 3,
+      "corners": "TL+TR"
+    },
+    {
+      "name": "path_4",
+      "rect": {
+        "x": 0,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 4,
+      "corners": "BR"
+    },
+    {
+      "name": "path_5",
+      "rect": {
+        "x": 16,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 5,
+      "corners": "TL+BR"
+    },
+    {
+      "name": "path_6",
+      "rect": {
+        "x": 32,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 6,
+      "corners": "TR+BR"
+    },
+    {
+      "name": "path_7",
+      "rect": {
+        "x": 48,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 7,
+      "corners": "TL+TR+BR"
+    },
+    {
+      "name": "path_8",
+      "rect": {
+        "x": 0,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 8,
+      "corners": "BL"
+    },
+    {
+      "name": "path_9",
+      "rect": {
+        "x": 16,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 9,
+      "corners": "TL+BL"
+    },
+    {
+      "name": "path_10",
+      "rect": {
+        "x": 32,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 10,
+      "corners": "TR+BL"
+    },
+    {
+      "name": "path_11",
+      "rect": {
+        "x": 48,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 11,
+      "corners": "TL+TR+BL"
+    },
+    {
+      "name": "path_12",
+      "rect": {
+        "x": 0,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 12,
+      "corners": "BR+BL"
+    },
+    {
+      "name": "path_13",
+      "rect": {
+        "x": 16,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 13,
+      "corners": "TL+BR+BL"
+    },
+    {
+      "name": "path_14",
+      "rect": {
+        "x": 32,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 14,
+      "corners": "TR+BR+BL"
+    },
+    {
+      "name": "path_15",
+      "rect": {
+        "x": 48,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      },
+      "mask": 15,
+      "corners": "all"
+    }
+  ],
+  "tags": [],
+  "tileset": {
+    "tileSize": 16,
+    "template": "corner15",
+    "cornerOrder": [
+      "TL",
+      "TR",
+      "BR",
+      "BL"
+    ],
+    "maskFormula": "TL*1 + TR*2 + BR*4 + BL*8 (1 = upper terrain)",
+    "frameIndexIsMask": true,
+    "terrains": {
+      "lower": "grass",
+      "upper": "dirt"
+    },
+    "overlay": true,
+    "dualGrid": true
+  }
+}

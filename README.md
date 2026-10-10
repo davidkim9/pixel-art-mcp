@@ -1,20 +1,87 @@
-# pixel-art-mcp
+<h1 align="center">pixel-art-mcp</h1>
 
-An [MCP](https://modelcontextprotocol.io) server that lets an AI model make pixel art the way a person uses Aseprite: an indexed-color canvas with layers, frames, selections and live previews. The output is indexed PNG files, plus JSON metadata describing frames, tags and pivots.
+<p align="center">
+  <b>Let Claude draw game-ready pixel art: sprites, walk cycles, effects, seamless tiles and icons.</b><br>
+  An <a href="https://modelcontextprotocol.io">MCP</a> server that gives an AI model an Aseprite-style editor: an indexed-color canvas with layers, frames, selections and live previews.
+</p>
 
-It handles:
+<p align="center">
+  <img src="docs/showcase/preview/scene.gif" width="720" alt="A hero walks along a dirt path past trees and tall grass, picks up a spinning coin, and walks back">
+</p>
 
-- **Sprites and effects**: frames, tags, onion skin, radial gradients, dithering, glow layers, and spritesheets.
-- **Layered characters**: one layer per body part, plus pivots, attach points, per-direction draw order, poses and `mirror_rig`.
-- **Seamless tilesets**: wrap-around drawing, seam checks, and corner15 / blob47 transition sets with autotile generation.
-- **Icons**: a shared size, outline and shadow, exported as an atlas.
-- **Palettes**: one enforced palette with named shading ramps.
+<p align="center"><sub>Every sprite and tile above was drawn by Claude through this server. The scene is composed from the exported PNGs and their JSON metadata by <a href="docs/showcase/build-previews.ts"><code>build-previews.ts</code></a>.</sub></p>
 
-Every pixel is a palette index (`0` = transparent), so off-palette colors can't happen. The model sees its work through upscaled preview images with a pixel grid and coordinate rulers.
+---
 
-## Setup
+## Why
 
-Requires Node.js 20+.
+Image models paint pictures. Games need **assets**: exact sizes, a fixed palette, frames that line up, tiles that repeat without seams, and metadata an engine can load. pixel-art-mcp lets the model work the way a pixel artist does, one deliberate pixel at a time, and checks its work as it goes:
+
+- 🎨 **Palette-locked.** Every pixel is a palette index, so off-palette colors and blurry anti-aliasing can't happen.
+- 👀 **It looks at its work.** Each tool can return an upscaled preview with a pixel grid and rulers, so the model checks what it drew before going on.
+- 🧩 **Ready for your game.** You get indexed PNGs plus JSON with frame rects, durations, tags, pivots and tile masks, or a `.aseprite` file to keep editing by hand.
+
+## Showcase
+
+All of these are in [`docs/showcase`](docs/showcase) with their metadata, drawn with the 96-color Otterisk 96 palette.
+
+### A top-down RPG character
+
+A 32×32 hero with a three-frame walk in four directions. The front and back views were drawn as one half and mirrored, the right-facing frames are mirrored from the left, and the body drops a pixel on each step. Outlines take the darkest step of each material's own ramp, and 1-px lines are pixel-perfect.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/showcase/preview/walk_down.gif" width="128" alt="walking down"></td>
+    <td align="center"><img src="docs/showcase/preview/walk_left.gif" width="128" alt="walking left"></td>
+    <td align="center"><img src="docs/showcase/preview/walk_right.gif" width="128" alt="walking right"></td>
+    <td align="center"><img src="docs/showcase/preview/walk_up.gif" width="128" alt="walking up"></td>
+    <td rowspan="2" align="center"><img src="docs/showcase/preview/hero.png" width="192" alt="hero spritesheet"><br><sub><code>hero.png</code>: 3 frames × 4 directions</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>down</sub></td>
+    <td align="center"><sub>left</sub></td>
+    <td align="center"><sub>right</sub></td>
+    <td align="center"><sub>up</sub></td>
+  </tr>
+</table>
+
+### Animated effects
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/showcase/preview/explosion.gif" width="128" alt="explosion"></td>
+    <td align="center"><img src="docs/showcase/preview/coin.gif" width="96" alt="spinning coin"></td>
+    <td align="center"><img src="docs/showcase/preview/sparkle.gif" width="96" alt="sparkle"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>explosion · 32×32 · 7 frames</sub></td>
+    <td align="center"><sub>coin · 16×16 · 6 frames</sub></td>
+    <td align="center"><sub>sparkle · 16×16 · 6 frames</sub></td>
+  </tr>
+</table>
+
+<img src="docs/showcase/preview/explosion.png" width="672" alt="explosion spritesheet">
+
+### Seamless tiles and autotiling
+
+Claude drew four path tiles: full, edge, outer corner and inner corner. `generate_autotile` derived the other twelve, and `check_transition_set` confirmed that every edge lines up. Over the grass tiles, that's enough to paint any path shape.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/showcase/preview/grass.png" width="288" alt="grass, flowers and tall grass tiles"></td>
+    <td align="center"><img src="docs/showcase/preview/path.png" width="256" alt="16-tile dirt path transition set"></td>
+    <td align="center"><img src="docs/showcase/preview/tree.png" width="128" alt="tree"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>grass · flowers · tall grass</sub></td>
+    <td align="center"><sub>path: corner15 transition set</sub></td>
+    <td align="center"><sub>tree prop</sub></td>
+  </tr>
+</table>
+
+## Quick start
+
+You need Node.js 20+ and [Claude Code](https://claude.com/claude-code) (or any MCP client).
 
 ```sh
 git clone git@github.com:davidkim9/pixel-art-mcp.git
@@ -24,11 +91,45 @@ npm link       # puts a `pixel-art-mcp` command on your PATH
 claude mcp add --scope user pixel-art -- pixel-art-mcp
 ```
 
-Then run `claude` in your project's folder. The server works in the project folder Claude Code gives it, falling back to the directory it was started in, so exports go to `./assets` there. You can change that with `configure_project({ outputDir })`.
+Then run `claude` in your game's folder and ask for something:
 
-If you'd rather not use `npm link`, register the server with `claude mcp add --scope user pixel-art -- node /path/to/pixel-art-mcp/dist/index.js`. With other MCP clients, `--root <dir>` sets the project folder explicitly.
+> Load the Otterisk 96 palette and draw a 32×32 top-down RPG hero with a 3-frame walk cycle in four directions. Export it as a spritesheet.
 
-## Concepts
+> Make a seamless 16×16 grass tile and a dirt path transition set that goes over it. Show me a test map.
+
+> Import `assets/enemies/slime.png` and give it a 4-frame squash-and-stretch idle. Keep the same palette.
+
+Exports go to `./assets` in your project. Change that with `configure_project({ outputDir })`.
+
+<details>
+<summary>Other ways to install</summary>
+
+- Without `npm link`: `claude mcp add --scope user pixel-art -- node /path/to/pixel-art-mcp/dist/index.js`
+- Other MCP clients: pass `--root <dir>` to set the project folder. Otherwise the server uses the folder the client gives it, falling back to the directory it was started in.
+
+</details>
+
+### Teach it your game's style
+
+Give Claude a style guide as a skill. It then draws every asset at your sizes and pivots, with your palette and shading rules, and follows your export steps. [`example/generic-skill/SKILL.md`](example/generic-skill/SKILL.md) is a template to fill in. It also covers pixel-art fundamentals: pixel-perfect lines (and the few places an L-corner belongs), clean slopes and curves, clusters, selective outlines, and when to dither.
+
+## What it can do
+
+| | |
+|---|---|
+| 🏃 **Sprites & animation** | Frames, tags, durations, onion skin, animated GIF previews, spritesheets (row, grid or packed) |
+| 🧍 **Layered characters** | One layer per body part with pivots, attach points, per-direction draw order, poses and `mirror_rig` |
+| 🌱 **Seamless tilesets** | Wrap-around drawing, seam checks, and corner15 / blob47 transition sets with autotile generation |
+| ✨ **Effects** | Radial gradients, ordered dithering, ramp shading, outlines, drop shadows and additive glow layers |
+| 🗂️ **Icons** | A shared size, safe area, outline and shadow for a whole set, exported as an atlas |
+| 🎨 **Palettes** | One enforced palette with named shading ramps; load Lospec `.hex`, GIMP `.gpl`, PNG or Aseprite palettes |
+| 🔁 **Round trips** | Import PNG sheets and `.aseprite` files, edit them, and write them back in place |
+
+---
+
+## Reference
+
+### Concepts
 
 | | |
 |---|---|
@@ -42,7 +143,8 @@ If you'd rather not use `npm link`, register the server with `claude mcp add --s
 | **Persistence** | `save_project` / `load_project` use `outputDir/.pixelmcp/project.json`. |
 | **File access** | Reads are limited to the project folder, `outputDir`, the configured `importRoots`, and folders the client shares with the session (MCP roots, e.g. added with `/add-dir`). |
 
-## Tools (85)
+<details>
+<summary><b>Tools (85)</b></summary>
 
 | Area | Tools |
 |---|---|
@@ -56,12 +158,15 @@ If you'd rather not use `npm link`, register the server with `claude mcp add --s
 | Characters | `define_rig_part` `set_draw_order` `define_pose` `mirror_rig` `render_assembled`🖼 `export_character` |
 | Tilesets | `set_wrap_mode` `check_seams`🖼 `create_transition_set` `generate_autotile` `check_transition_set`🖼 `render_terrain_preview`🖼 `export_tileset` |
 | Icons | `create_icon_set` `apply_icon_style` `export_icon_atlas` |
-| Export & validation | `export_png` `export_spritesheet` `validate_document` |
+| Export & validation | `export_png` `export_spritesheet` `export_aseprite` `validate_document` |
 | Import | `inspect_file` `import_png` `import_aseprite` `export_to_source` |
 
-Each tool's description in the MCP schema explains its parameters. The server also sends workflow guidance as MCP instructions.
+🖼 = returns an image. Each tool's description in the MCP schema explains its parameters, and the server also sends workflow guidance as MCP instructions.
 
-## Workflows
+</details>
+
+<details>
+<summary><b>Workflows</b></summary>
 
 **Effect (fireball)**: `load_palette` → `define_ramp` (fire: dark → light) → `create_document(kind: "effect")` → block out silhouettes per frame (`draw_ellipse`, `draw_grid`) → `render_frames` → color them with `radial_gradient(onlyOpaque: true, dither: "bayer4")` → refine with `draw_grid` → `render_onion` → `tag_frames` → `export_spritesheet`.
 
@@ -73,7 +178,10 @@ Each tool's description in the MCP schema explains its parameters. The server al
 
 **Editing an existing asset**: `inspect_file` → `import_png` / `import_aseprite` (colorMode `exact`) → `read_grid` + `render_preview` → change only the pixels the edit needs → `export_to_source`.
 
-## Output
+</details>
+
+<details>
+<summary><b>Output format</b></summary>
 
 Exports are 8-bit **indexed PNGs**. The palette is embedded and index 0 is transparent through a one-entry `tRNS`. Guide layers and hidden layers are never exported. Sheets and atlases separate frames with `atlasPadding` (default 2) and duplicate each frame's edge pixels `atlasExtrude` pixels (default 1) into that padding. Output is deterministic, so the same inputs give byte-identical files.
 
@@ -83,6 +191,7 @@ Exports are 8-bit **indexed PNGs**. The palette is embedded and index 0 is trans
 | `export_spritesheet` | `name.png` sheet, plus `name_glow.png` when there are additive layers |
 | `export_character` | `name.png` atlas of every part × direction, or `name_<part>_<direction>.png` per part (`characterExport: "parts"`) |
 | `export_tileset` / `export_icon_atlas` | `name.png` atlas |
+| `export_aseprite` | `name.aseprite`: indexed, all layers and frames, tags, palette, frame pivots as a `pivot` slice (no metadata file; validation issues are warnings) |
 | Metadata | `name.json` next to the PNG and/or a PNG `tEXt` chunk keyed `pixelmcp` (`metadataMode`) |
 
 ```jsonc
@@ -106,7 +215,10 @@ Exports are 8-bit **indexed PNGs**. The palette is embedded and index 0 is trans
 
 `rect` is in image pixels (origin top-left), and `pivotPx` is relative to the rect. Trimmed frames (packed layout) and character parts add `offsetPx`, the rect's position on the original canvas. Tilesets add each tile's `mask` and a `tileset` block (for blob47, a 256-entry `maskToFrame` table). Characters add `part`/`direction` per frame and a `character` block with parts, parents, attach points, draw orders and poses. Icon atlases add `icons: { name: frameIndex }`.
 
-## Import
+</details>
+
+<details>
+<summary><b>Import</b></summary>
 
 - **`import_png`**: when pixel-art-mcp metadata is present, re-import is **lossless**. Frames, durations, tags, pivots, trims, tile masks, icon names and character rigs all come back, and extruded pixels are discarded. Exporting again produces byte-identical files.
   - Other slicing modes: `"none"`, a grid `{frameWidth, frameHeight, margin?, spacing?, count?}` (source-image pixels), `{asepriteJson}` for Aseprite sheet JSON in hash or array format, and `"auto"`. Auto detects a grid from transparent gutters, and when more than one grid fits it refuses and returns the candidates.
@@ -122,7 +234,10 @@ Exports are 8-bit **indexed PNGs**. The palette is embedded and index 0 is trans
   - Other blend modes and opacity are flattened with a warning; addition and lighten become `additive`.
 - **`export_to_source`**: overwrites PNG sources in place with their original layout, including third-party sheet rects and upscale factor, and regenerates metadata. It refuses if the file changed since import unless `force: true`. For `.aseprite` sources it writes `name.png` + metadata next to the file.
 
-## Differences from the original spec
+</details>
+
+<details>
+<summary><b>Differences from the original spec</b></summary>
 
 - **Metadata only describes the images:** frame rects, pivots, durations, tags and asset-specific data. No engine- or language-specific files are generated.
 - **PNG encoding is in-house** (`src/png.ts`). pngjs can't write indexed PNGs or `tEXt` chunks. The decoder handles every color type, bit depth and Adam7 interlacing, and tests cross-check it against pngjs.
@@ -132,6 +247,8 @@ Exports are 8-bit **indexed PNGs**. The palette is embedded and index 0 is trans
 - **`.aseprite` imports default to `scale: 1`.**
 - **Additions:** `undo`, `delete_document`, `set_layer_properties`, `set_pivot`, `deselect`, `export_png` and `export_character`; selection modes (add, subtract, intersect).
 
+</details>
+
 ## Development
 
 ```sh
@@ -139,6 +256,7 @@ npm test            # vitest: unit, integration (in-memory MCP client), stdio sm
 npm run typecheck
 npm run build       # → dist/
 npm run dev         # run from source with tsx
+npx tsx docs/showcase/build-previews.ts   # rebuild the README images from docs/showcase
 ```
 
 ```
@@ -152,4 +270,9 @@ src/
   tileset/ character*.ts icons.ts validate.ts
   import/                      PNG/Aseprite import, slicing, color mapping, export_to_source
 test/                          vitest suites
+docs/showcase/                 example assets, their editor project, and the README previews
 ```
+
+## License
+
+[MIT](LICENSE)

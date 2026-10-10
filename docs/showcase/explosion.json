@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "name": "explosion",
+  "kind": "effect",
+  "image": "explosion.png",
+  "size": {
+    "w": 224,
+    "h": 32
+  },
+  "sourceSize": {
+    "w": 32,
+    "h": 32
+  },
+  "pixelsPerUnit": 16,
+  "paletteId": "otterisk_96",
+  "layout": {
+    "type": "spritesheet",
+    "layout": "row",
+    "padding": 0,
+    "extrude": 0
+  },
+  "frames": [
+    {
+      "name": "explosion_0",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 60,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "name": "explosion_1",
+      "rect": {
+        "x": 32,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 60,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "name": "explosion_2",
+      "rect": {
+        "x": 64,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 60,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "name": "explosion_3",
+      "rect": {
+        "x": 96,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "name": "explosion_4",
+      "rect": {
+        "x": 128,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "name": "explosion_5",
+      "rect": {
+        "x": 160,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "name": "explosion_6",
+      "rect": {
+        "x": 192,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "durationMs": 100,
+      "pivotPx": {
+        "x": 16,
+        "y": 16
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "explode",
+      "from": 0,
+      "to": 6,
+      "direction": "forward"
+    }
+  ]
+}

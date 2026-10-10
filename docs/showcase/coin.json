@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "name": "coin",
+  "kind": "effect",
+  "image": "coin.png",
+  "size": {
+    "w": 96,
+    "h": 16
+  },
+  "sourceSize": {
+    "w": 16,
+    "h": 16
+  },
+  "pixelsPerUnit": 16,
+  "paletteId": "otterisk_96",
+  "layout": {
+    "type": "spritesheet",
+    "layout": "row",
+    "padding": 0,
+    "extrude": 0
+  },
+  "frames": [
+    {
+      "name": "coin_0",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 240,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      }
+    },
+    {
+      "name": "coin_1",
+      "rect": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 90,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      }
+    },
+    {
+      "name": "coin_2",
+      "rect": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 90,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      }
+    },
+    {
+      "name": "coin_3",
+      "rect": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 90,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      }
+    },
+    {
+      "name": "coin_4",
+      "rect": {
+        "x": 64,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 90,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      }
+    },
+    {
+      "name": "coin_5",
+      "rect": {
+        "x": 80,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "durationMs": 90,
+      "pivotPx": {
+        "x": 8,
+        "y": 8
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "spin",
+      "from": 0,
+      "to": 5,
+      "direction": "forward"
+    }
+  ]
+}
