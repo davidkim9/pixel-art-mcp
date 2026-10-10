@@ -1,4 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
 import { z } from "zod";
+import { asepritePath, encodeAseprite } from "../export/aseprite-writer.js";
 import { exportSinglePng, exportSpritesheet } from "../export/exporters.js";
 import { writeExport } from "../export/write.js";
 import type { Project } from "../project.js";
@@ -49,6 +52,26 @@ export function registerExportTools(register: Register, project: Project): void 
           hasGlow: Boolean(result.metadata.glow),
         },
       };
+    },
+  });
+
+  register({
+    name: "export_aseprite",
+    title: "Export Aseprite file",
+    description:
+      "Save the document as an indexed .aseprite file at outputDir/<name>.aseprite, for editing in Aseprite. " +
+      "Keeps every layer (visibility, lock, additive → Addition blend, guides as reference layers), frames and durations, " +
+      "tags with direction, the palette (index 0 transparent) and frame pivots (as a \"pivot\" slice). " +
+      "Rig data is not stored. Validation problems are reported as warnings, not blockers. Overwrites an existing file.",
+    input: { docId: zDocId, name: z.string().optional().describe("file name without extension (default: document name); may contain / for subfolders") },
+    destructive: true,
+    handler: (args) => {
+      const doc = project.getDoc(args.docId);
+      const file = asepritePath(project, doc, args.name);
+      const { data, warnings } = encodeAseprite(project, doc);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, data);
+      return { data: { file: project.displayPath(file), bytes: data.length, layers: doc.layers.length, frames: doc.frames.length, warnings } };
     },
   });
 
