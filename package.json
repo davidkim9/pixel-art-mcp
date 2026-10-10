@@ -1,5 +1,5 @@
 {
-  "name": "pixel-art-mcp",
+  "name": "@davidkim9/pixel-art-mcp",
   "version": "0.1.0",
   "description": "MCP server for creating indexed-color pixel art (sprites, characters, tilesets, effects, icons) as PNG files",
   "license": "MIT",
@@ -15,6 +15,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },

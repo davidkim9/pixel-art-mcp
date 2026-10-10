@@ -84,7 +84,7 @@ Claude drew four path tiles: full, edge, outer corner and inner corner. `generat
 You need Node.js 20+ and [Claude Code](https://claude.com/claude-code) (or any MCP client).
 
 ```sh
-claude mcp add --scope user pixel-art -- npx -y pixel-art-mcp@latest
+claude mcp add --scope user pixel-art -- npx -y @davidkim9/pixel-art-mcp@latest
 ```
 
 `npx` downloads the server from npm the first time and runs it from its cache after that, so there's nothing to clone or build. Then run `claude` in your game's folder and ask for something:
@@ -107,7 +107,7 @@ Add the server to the client's MCP config:
   "mcpServers": {
     "pixel-art": {
       "command": "npx",
-      "args": ["-y", "pixel-art-mcp@latest", "--root", "/path/to/your/game"]
+      "args": ["-y", "@davidkim9/pixel-art-mcp@latest", "--root", "/path/to/your/game"]
     }
   }
 }
