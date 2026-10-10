@@ -84,14 +84,10 @@ Claude drew four path tiles: full, edge, outer corner and inner corner. `generat
 You need Node.js 20+ and [Claude Code](https://claude.com/claude-code) (or any MCP client).
 
 ```sh
-git clone git@github.com:davidkim9/pixel-art-mcp.git
-cd pixel-art-mcp
-npm install    # also builds dist/
-npm link       # puts a `pixel-art-mcp` command on your PATH
-claude mcp add --scope user pixel-art -- pixel-art-mcp
+claude mcp add --scope user pixel-art -- npx -y pixel-art-mcp@latest
 ```
 
-Then run `claude` in your game's folder and ask for something:
+`npx` downloads the server from npm the first time and runs it from its cache after that, so there's nothing to clone or build. Then run `claude` in your game's folder and ask for something:
 
 > Load the Otterisk 96 palette and draw a 32×32 top-down RPG hero with a 3-frame walk cycle in four directions. Export it as a spritesheet.
 
@@ -102,10 +98,37 @@ Then run `claude` in your game's folder and ask for something:
 Exports go to `./assets` in your project. Change that with `configure_project({ outputDir })`.
 
 <details>
-<summary>Other ways to install</summary>
+<summary>Other MCP clients (Claude Desktop, Cursor, …)</summary>
 
-- Without `npm link`: `claude mcp add --scope user pixel-art -- node /path/to/pixel-art-mcp/dist/index.js`
-- Other MCP clients: pass `--root <dir>` to set the project folder. Otherwise the server uses the folder the client gives it, falling back to the directory it was started in.
+Add the server to the client's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "pixel-art": {
+      "command": "npx",
+      "args": ["-y", "pixel-art-mcp@latest", "--root", "/path/to/your/game"]
+    }
+  }
+}
+```
+
+`--root` sets the project folder. Without it, the server uses the folder the client gives it, falling back to the directory it was started in.
+
+</details>
+
+<details>
+<summary>Install from source</summary>
+
+```sh
+git clone git@github.com:davidkim9/pixel-art-mcp.git
+cd pixel-art-mcp
+npm install    # also builds dist/
+npm link       # puts a `pixel-art-mcp` command on your PATH
+claude mcp add --scope user pixel-art -- pixel-art-mcp
+```
+
+Without `npm link`, register `node /path/to/pixel-art-mcp/dist/index.js` instead.
 
 </details>
 
