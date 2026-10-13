@@ -160,21 +160,21 @@ Give Claude a style guide as a skill. It then draws every asset at your sizes an
 | **Palettes** | `load_palette` accepts a hex list, Lospec `.hex` or GIMP `.gpl` text, a `.png`/`.aseprite`/`.gpl`/`.hex` file, or `builtin:pico8`. Index 0 is inserted as transparent, so the first color becomes index 1. Ramps go dark → light. |
 | **Documents** | `kind` is one of `sprite`, `character`, `tileset`, `effect` or `icon`. Layers are listed bottom → top, and frames carry a duration, tag, pivot and label. |
 | **Coordinates** | Integer pixels with the origin at the top-left, y pointing down. Pivots are continuous: `(w/2, h)` is the bottom-center. |
-| **Drawing** | `draw_grid` is the main tool. Each row is a string, the legend maps characters to indices, `.` leaves a pixel unchanged and `_` makes it transparent. `read_grid` reads pixels back in the same format, and its output can be fed straight back into `draw_grid`. |
+| **Drawing** | `draw_grid` is the main tool. Each row is a string, the legend maps characters to indices, `.` leaves a pixel unchanged and `_` makes it transparent. `read_grid` reads pixels back in the same format, and its output can be fed straight back into `draw_grid`. For organic shapes, `draw_path` strokes straight or curved paths that can taper, `draw_polygon` fills irregular or spline-smoothed blobs, and `spray` scatters dabs or small stamps with a seed, falloff and `within` masking. 1px strokes are pixel-perfect (no doubled L corners), and `pixel_perfect` cleans them out of existing linework. |
 | **Feedback** | Every pixel-changing tool accepts `preview: true`. The `render_*` tools return PNG images, and `export_gif` writes an animated GIF for people to review. |
 | **Undo** | `undo` reverts the last change to a document, up to 30 steps. A tool that fails partway leaves its document unchanged. |
 | **Persistence** | `save_project` / `load_project` use `outputDir/.pixelmcp/project.json`. |
 | **File access** | Reads are limited to the project folder, `outputDir`, the configured `importRoots`, and folders the client shares with the session (MCP roots, e.g. added with `/add-dir`). |
 
 <details>
-<summary><b>Tools (85)</b></summary>
+<summary><b>Tools (90)</b></summary>
 
 | Area | Tools |
 |---|---|
 | Project | `configure_project` `create_document` `list_documents` `get_document_info` `duplicate_document` `delete_document` `resize_canvas` `undo` `save_project` `load_project` |
 | Palette | `load_palette` `list_palettes` `get_palette` `render_palette`🖼 `define_ramp` `remap_palette` |
 | Layers & frames | `add_layer` `remove_layer` `rename_layer` `reorder_layer` `set_layer_visibility` `duplicate_layer` `set_layer_properties` `add_frame` `remove_frame` `duplicate_frame` `move_frame` `set_frame_duration` `tag_frames` `set_pivot` |
-| Drawing | `draw_grid` `read_grid` `set_pixels` `draw_line` `draw_rect` `draw_ellipse` `flood_fill` `replace_color` `clear` `set_symmetry` |
+| Drawing | `draw_grid` `read_grid` `set_pixels` `draw_line` `draw_path` `draw_polygon` `draw_rect` `draw_ellipse` `spray` `pixel_perfect` `flood_fill` `replace_color` `clear` `set_symmetry` |
 | Selection & transform | `select_rect` `select_by_color` `select_layer_content` `deselect` `move_selection` `copy_selection` `paste` `flip_selection` `rotate_selection_90` `offset_layer` |
 | Shading & effects | `auto_outline` `drop_shadow` `shade_with_ramp` `radial_gradient` `dither_region` `find_orphan_pixels` |
 | Previews 🖼 | `render_preview` `render_frames` `render_onion` `render_tiled` `render_assembled` `render_in_context` `export_gif` |
@@ -192,6 +192,8 @@ Give Claude a style guide as a skill. It then draws every asset at your sizes an
 <summary><b>Workflows</b></summary>
 
 **Effect (fireball)**: `load_palette` → `define_ramp` (fire: dark → light) → `create_document(kind: "effect")` → block out silhouettes per frame (`draw_ellipse`, `draw_grid`) → `render_frames` → color them with `radial_gradient(onlyOpaque: true, dither: "bayer4")` → refine with `draw_grid` → `render_onion` → `tag_frames` → `export_spritesheet`.
+
+**Tree / plant**: tapered, curved trunk and branches with `draw_path(curve: true, width: 5, widthEnd: 2)` → on a layer above, a dark back mass with `draw_polygon(curve: true, filled: true)` using irregular points → break up its rim with `spray(points: <same outline>, stamp: {rows: [".x.", "xxx"], …}, within: "transparent")` → lighter front clumps as smaller curved polygons, offset toward the light → leaf texture with `spray(stamp: …, within: "opaque")` and a few highlight dabs → `pixel_perfect` on any hand-drawn 1px stems.
 
 **Character**: `create_document(kind: "character", width: 32, height: 32)` creates layers `foot_l foot_r body hand_l hand_r head` and one frame per direction (`down up left right`). Draw each part in place on frames 0 (down), 1 (up) and 3 (right). Then `define_rig_part` sets pivots, parents and attach points, `mirror_rig(right → left)` builds the left view, and `define_pose` (`idle_0`, `walk_0`…) adds poses. Review with `render_assembled(pose: "walk_*")` and finish with `export_character`. Pose offsets follow the parent chain and mirror automatically for mirrored directions, and the server warns when a part stops overlapping its parent.
 

@@ -80,7 +80,7 @@ L-corners (avoid)      pixel-perfect
      ##                    ##
 ```
 
-This applies to outlines, hair strands, cracks, cables and the edges of curves. An outline drawn as the inner boundary of a filled shape (fill pixels that have an empty orthogonal neighbour) is already pixel-perfect. An outline drawn as the outer ring around a shape picks up L-corners at every diagonal step, so clean those.
+This applies to outlines, hair strands, cracks, cables and the edges of curves. An outline drawn as the inner boundary of a filled shape (fill pixels that have an empty orthogonal neighbour) is already pixel-perfect. An outline drawn as the outer ring around a shape picks up L-corners at every diagonal step, so clean those. `draw_line` and 1px `draw_path` strokes are already pixel-perfect; run `pixel_perfect` (with `region` or `c`) over hand-drawn `draw_grid` linework.
 
 **Keep an L-corner only when the corner is real:**
 - **Square forms.** Box corners, buildings, windows, UI frames, crates, the 90° corners of a tile grid. Rounding them makes them look soft or melted.
@@ -90,7 +90,7 @@ This applies to outlines, hair strands, cracks, cables and the edges of curves. 
 
 **2. Clean slopes.** Straight lines use consistent run lengths: 1:1 (45°), 2:1, 3:1, 1:2. A run of `3-1-2-1-3` is a jaggy; pick a ratio and keep it. Don't mix ratios inside one straight edge.
 
-**3. Smooth curves.** A curve's runs change gradually and symmetrically: `4-2-1-1-2-4`, never `4-1-3-1`. No run may be longer than the one before it on the way into the curve. Use `draw_ellipse` for round shapes and check that circles don't come out as rounded squares.
+**3. Smooth curves.** A curve's runs change gradually and symmetrically: `4-2-1-1-2-4`, never `4-1-3-1`. No run may be longer than the one before it on the way into the curve. Use `draw_ellipse` for round shapes and check that circles don't come out as rounded squares. For organic curves (branches, stems, hair, irregular blobs), use `draw_path` / `draw_polygon` with `curve: true` instead of hand-placing runs.
 
 **4. Clusters, not noise.** Every colour region should be a deliberate cluster with a readable shape. Single pixels of a different tone in a flat area read as dirt. Texture is a few small, purposeful clusters (a 2–3 px leaf mark, a plank knot), placed sparsely.
 

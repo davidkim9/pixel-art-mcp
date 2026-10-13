@@ -246,3 +246,208 @@ export function floodRegion(cel: Uint8Array, w: number, h: number, x: number, y:
   }
   return out.sort((p, q) => p - q);
 }
+
+// ---------------------------------------------------------------------------
+// Paths, curves, polygons and brushes
+
+export type Point = [number, number];
+export type BrushShape = "circle" | "square" | "diamond";
+
+/** Like linePoints, but ordered from (x0,y0) to (x1,y1). */
+export function orderedLine(x0: number, y0: number, x1: number, y1: number): Point[] {
+  const pts = linePoints(x0, y0, x1, y1);
+  return pts[0]![0] === x0 && pts[0]![1] === y0 ? pts : pts.reverse();
+}
+
+/**
+ * Aseprite's "pixel perfect" filter for an ordered stroke: drops consecutive
+ * duplicates and every L-corner pixel (one orthogonally adjacent to both its
+ * neighbors while those neighbors touch diagonally). Closed paths are also
+ * checked across the start/end joint.
+ */
+export function pixelPerfect(path: Point[], closed = false): Point[] {
+  const isL = (a: Point, b: Point, c: Point) =>
+    (a[0] === b[0] || a[1] === b[1]) && (c[0] === b[0] || c[1] === b[1]) && a[0] !== c[0] && a[1] !== c[1];
+  const out: Point[] = [];
+  for (const p of path) {
+    const last = out[out.length - 1];
+    if (last && last[0] === p[0] && last[1] === p[1]) continue;
+    if (out.length >= 2 && isL(out[out.length - 2]!, last!, p)) out.pop();
+    out.push(p);
+  }
+  if (closed && out.length > 3) {
+    const first = out[0]!;
+    const last = out[out.length - 1]!;
+    if (first[0] === last[0] && first[1] === last[1]) out.pop();
+    if (out.length > 3 && isL(out[out.length - 2]!, out[out.length - 1]!, out[0]!)) out.pop();
+    if (out.length > 3 && isL(out[out.length - 1]!, out[0]!, out[1]!)) out.shift();
+  }
+  return out;
+}
+
+/** Joins a sequence of pixel positions into a gap-free ordered path. */
+function connect(samples: Point[]): Point[] {
+  const out: Point[] = [];
+  for (const s of samples) {
+    const last = out[out.length - 1];
+    if (!last) out.push(s);
+    else if (last[0] !== s[0] || last[1] !== s[1]) out.push(...orderedLine(last[0], last[1], s[0], s[1]).slice(1));
+  }
+  return out;
+}
+
+/** Straight segments through every point (rounded to pixels), pixel-perfect unless disabled. */
+export function polylinePoints(points: Point[], closed: boolean, perfect = true): Point[] {
+  const pts = points.map(([x, y]) => [Math.round(x), Math.round(y)] as Point);
+  if (closed && pts.length > 2) pts.push(pts[0]!);
+  const path = connect(pts);
+  return perfect ? pixelPerfect(path, closed) : path;
+}
+
+/**
+ * Cardinal (Catmull-Rom at tension 0) spline passing through every control
+ * point, rasterized as a gap-free 1px path. tension 1 gives straight segments.
+ */
+export function curvePoints(points: Point[], closed: boolean, tension = 0, perfect = true): Point[] {
+  const n = points.length;
+  if (n < 3) return polylinePoints(points, closed, perfect);
+  const get = (i: number): Point => (closed ? points[((i % n) + n) % n]! : points[Math.max(0, Math.min(n - 1, i))]!);
+  const k = (1 - tension) / 2;
+  const samples: Point[] = [];
+  const segments = closed ? n : n - 1;
+  for (let i = 0; i < segments; i++) {
+    const p0 = get(i - 1), p1 = get(i), p2 = get(i + 1), p3 = get(i + 2);
+    const m1 = [k * (p2[0] - p0[0]), k * (p2[1] - p0[1])];
+    const m2 = [k * (p3[0] - p1[0]), k * (p3[1] - p1[1])];
+    const steps = Math.max(2, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * 4));
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps, t2 = t * t, t3 = t2 * t;
+      const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t, h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+      samples.push([
+        Math.round(h00 * p1[0] + h10 * m1[0]! + h01 * p2[0] + h11 * m2[0]!),
+        Math.round(h00 * p1[1] + h10 * m1[1]! + h01 * p2[1] + h11 * m2[1]!),
+      ]);
+    }
+  }
+  const path = connect(samples);
+  return perfect ? pixelPerfect(path, closed) : path;
+}
+
+/** Even-odd test of a pixel center against a polygon whose vertices are pixel centers. */
+function insidePolygon(poly: Point[], x: number, y: number): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i]!;
+    const [xj, yj] = poly[j]!;
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** Polygon outline (closed 1px path), plus its interior when filled. */
+export function polygonPoints(points: Point[], filled: boolean, curve = false, tension = 0): { outline: Point[]; fill: Point[] } {
+  // Straight polygons keep their vertices exactly (no pixel-perfect corner cutting); curved ones are strokes.
+  const outline = curve ? curvePoints(points, true, tension) : polylinePoints(points, true, false);
+  if (!filled) return { outline, fill: [] };
+  const poly = curve ? outline : points;
+  const xs = outline.map((p) => p[0]);
+  const ys = outline.map((p) => p[1]);
+  const fill: Point[] = [];
+  for (let y = Math.min(...ys); y <= Math.max(...ys); y++) {
+    for (let x = Math.min(...xs); x <= Math.max(...xs); x++) if (insidePolygon(poly, x, y)) fill.push([x, y]);
+  }
+  return { outline, fill };
+}
+
+/** Pixel offsets of a brush tip of the given diameter, centered on (0, 0). */
+export function brushStamp(diameter: number, shape: BrushShape = "circle"): Point[] {
+  const d = Math.max(1, Math.round(diameter));
+  const o = Math.floor((d - 1) / 2);
+  if (shape === "circle") return ellipsePoints(0, 0, d - 1, d - 1, true).map(([x, y]) => [x - o, y - o]);
+  const pts: Point[] = [];
+  const c = (d - 1) / 2;
+  for (let y = 0; y < d; y++) {
+    for (let x = 0; x < d; x++) {
+      if (shape === "square" || Math.abs(x - c) + Math.abs(y - c) <= c + 0.5) pts.push([x - o, y - o]);
+    }
+  }
+  return pts;
+}
+
+/**
+ * Stamps a brush along an ordered path, interpolating the diameter from
+ * widthStart to widthEnd by arc length (tapered strokes). A 1px stroke is the
+ * path itself.
+ */
+export function strokePoints(path: Point[], widthStart: number, widthEnd: number, shape: BrushShape = "circle"): Point[] {
+  if (Math.round(widthStart) <= 1 && Math.round(widthEnd) <= 1) return path;
+  const lengths = [0];
+  for (let i = 1; i < path.length; i++) {
+    lengths.push(lengths[i - 1]! + Math.hypot(path[i]![0] - path[i - 1]![0], path[i]![1] - path[i - 1]![1]));
+  }
+  const total = lengths[lengths.length - 1]! || 1;
+  const stamps = new Map<number, Point[]>();
+  const seen = new Set<string>();
+  const out: Point[] = [];
+  path.forEach(([px, py], i) => {
+    const d = Math.max(1, Math.round(widthStart + (widthEnd - widthStart) * (lengths[i]! / total)));
+    if (!stamps.has(d)) stamps.set(d, brushStamp(d, shape));
+    for (const [dx, dy] of stamps.get(d)!) {
+      const key = `${px + dx},${py + dy}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push([px + dx, py + dy]);
+      }
+    }
+  });
+  return out;
+}
+
+/** Small seeded PRNG (mulberry32) returning floats in [0, 1). */
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Removes L-corner pixels from 1px lines already on a layer. A pixel goes when
+ * two same-color orthogonal neighbors on perpendicular sides hold it, the
+ * diagonal between those arms differs, and the outside of the corner (the two
+ * opposite orthogonals and the opposite diagonal) is one background color,
+ * which the pixel takes. Lines stay 8-connected and filled areas are untouched.
+ * Processed in scan order on the live layer, like a freehand stroke.
+ */
+export function removeLCorners(cel: Uint8Array, w: number, h: number, mask: Uint8Array | null, wrap: boolean, only?: number): number {
+  /** Pixel value, or -1 off the canvas (wrap off), which matches any background. */
+  const at = (x: number, y: number): number => {
+    if (wrap) return cel[(((y % h) + h) % h) * w + (((x % w) + w) % w)]!;
+    return x < 0 || y < 0 || x >= w || y >= h ? -1 : cel[y * w + x]!;
+  };
+  let removed = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const p = y * w + x;
+      const c = cel[p]!;
+      if (c === 0 || (only !== undefined && c !== only) || (mask && !mask[p])) continue;
+      corner: for (const sx of [-1, 1]) {
+        for (const sy of [-1, 1]) {
+          if (at(x + sx, y) !== c || at(x, y + sy) !== c || at(x + sx, y + sy) === c) continue;
+          const outside = [at(x - sx, y - sy), at(x - sx, y), at(x, y - sy)].filter((v) => v >= 0);
+          const bg = outside[0];
+          if (bg !== undefined && bg !== c && outside.every((v) => v === bg)) {
+            cel[p] = bg;
+            removed++;
+            break corner;
+          }
+        }
+      }
+    }
+  }
+  return removed;
+}

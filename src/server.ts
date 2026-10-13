@@ -28,6 +28,7 @@ Workflow:
 - Load or define the palette and ramps first (load_palette, define_ramp); never use colors outside them.
 - Block out silhouettes before detail. Check render_preview after every significant change (or pass preview: true to drawing tools).
 - Prefer draw_grid for anything detailed; use read_grid before editing existing work.
+- Organic shapes (trees, plants, rocks, hair, clouds): tapered curved strokes with draw_path, irregular blobs with draw_polygon (curve: true), texture and ragged edges with spray (stamps, within). 1px strokes are pixel-perfect; pixel_perfect cleans L corners from hand-drawn lines.
 - Animation: review with render_frames and render_onion every time frames change.
 - Tiles: check render_tiled and check_seams before exporting; transition sets also need check_transition_set and render_terrain_preview.
 - Use render_in_context to confirm new assets match the scale and style of existing ones.
